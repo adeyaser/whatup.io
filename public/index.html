@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Gateway Professional</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+
+<body>
+    <div id="toast-container"></div>
+    <!-- Mobile Header -->
+    <div class="mobile-header">
+        <div class="brand-mobile">
+            <h2 style="font-size: 1.25rem; font-weight: 700; color: #5046e5;">WA Gateway</h2>
+        </div>
+        <button id="menu-toggle" class="menu-toggle">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+    </div>
+
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+    <div class="app-container">
+        <aside class="sidebar" id="sidebar">
+            <div class="brand">
+                <h2>WA Gateway</h2>
+            </div>
+            <nav class="menu">
+                <a href="#" class="menu-item active" data-target="dashboard">
+                    <span class="icon">📊</span> Dashboard
+                </a>
+                <a href="#" class="menu-item" data-target="send-message">
+                    <span class="icon">📨</span> Send Message
+                </a>
+                <a href="#" class="menu-item" data-target="logs">
+                    <span class="icon">📜</span> Logs
+                </a>
+                <a href="#" class="menu-item" data-target="groups">
+                    <span class="icon">👥</span> Contact Groups
+                </a>
+                <a href="#" class="menu-item" data-target="documentation">
+                    <span class="icon">📚</span> Docs
+                </a>
+                <div class="menu-separator" style="margin: 1rem 0; border-top: 1px solid rgba(255,255,255,0.1);"></div>
+                <div
+                    style="padding: 0 1rem; margin-bottom: 0.5rem; color: #94a3b8; font-size: 0.8rem; text-transform: uppercase;">
+                    Devices</div>
+                <div id="device-list" class="device-list">
+                    <!-- Device items injected here -->
+                </div>
+                <button id="add-device-btn" class="btn-secondary"
+                    style="margin: 0.5rem 1rem; width: auto; font-size: 0.8rem;">+ Add Device</button>
+            </nav>
+            <div class="connection-status">
+                <span class="status-dot"></span>
+                <span id="socket-status">Socket: Disconnected</span>
+                <button id="logout-btn"
+                    style="margin-left: auto; background: none; border: none; color: #ef4444; cursor: pointer;">Logout</button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="view active">
+                <header>
+                    <div>
+                        <h1>Dashboard</h1>
+                        <p style="color: var(--gray-500); font-size: 0.875rem; margin-top: 0.25rem;">Monitor your
+                            WhatsApp Gateway activity</p>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div style="background: white; padding: 0.5rem 1rem; border-radius: var(--radius-full); box-shadow: var(--shadow-sm); font-size: 0.875rem; font-weight: 500; color: var(--gray-700);"
+                            id="user-info">User</div>
+                    </div>
+                </header>
+
+                <!-- Stats Grid -->
+                <div class="grid grid-4" style="margin-bottom: var(--space-xl);">
+                    <div class="stat-card">
+                        <div class="stat-label">Messages Sent</div>
+                        <div class="stat-value" id="sent-count" style="color: var(--purple-600);">0</div>
+                        <div style="margin-top: 0.5rem; color: var(--gray-500); font-size: 0.8rem;">📤 Outgoing</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Messages Received</div>
+                        <div class="stat-value" id="recv-count" style="color: var(--success);">0</div>
+                        <div style="margin-top: 0.5rem; color: var(--gray-500); font-size: 0.8rem;">📥 Incoming</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Active Device</div>
+                        <div class="stat-value" id="current-device-name"
+                            style="font-size: 1.25rem; color: var(--gray-700);">None</div>
+                        <div id="current-device-id"
+                            style="font-size: 0.8rem; color: var(--gray-400); margin-bottom: 0.25rem;">ID: -</div>
+                        <div style="margin-top: 0.5rem; color: var(--gray-500); font-size: 0.8rem;">📱 Connected</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Status</div>
+                        <div class="stat-value" id="wa-status" style="font-size: 1rem; color: var(--gray-600);">Unknown
+                        </div>
+                        <div style="margin-top: 0.5rem; color: var(--gray-500); font-size: 0.8rem;">🔌 Connection</div>
+                    </div>
+                </div>
+
+                <!-- QR Code Card -->
+                <div class="card">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-lg);">
+                        <div>
+                            <h3 style="margin: 0; font-size: 1.25rem; font-weight: 600;">Device Connection</h3>
+                            <p style="color: var(--gray-500); font-size: 0.875rem; margin: 0.25rem 0 0 0;">Scan QR code
+                                to connect your WhatsApp</p>
+                        </div>
+                        <button id="delete-device-btn"
+                            style="display: none; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 0.625rem 1.25rem; border: none; border-radius: var(--radius-md); font-weight: 600; cursor: pointer; transition: all var(--transition-base); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);"
+                            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(239, 68, 68, 0.4)'"
+                            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(239, 68, 68, 0.3)'">🗑
+                            Delete Device</button>
+                    </div>
+                    <div id="qr-container">
+                        <div class="placeholder">Select a device to connect</div>
+                        <img id="qr-image" src="" alt="Scan Me" style="display:none;">
+                    </div>
+                </div>
+            </section>
+
+            <!-- Send Message Section -->
+            <section id="send-message" class="view">
+                <header>
+                    <div>
+                        <h1>Send Message</h1>
+                        <p style="color: var(--gray-500); font-size: 0.875rem; margin-top: 0.25rem;">Send text or media
+                            messages via WhatsApp</p>
+                    </div>
+                </header>
+
+                <div class="card">
+                    <!-- Info Banner -->
+                    <div
+                        style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-left: 4px solid var(--info); padding: var(--space-lg); margin-bottom: var(--space-xl); border-radius: var(--radius-md);">
+                        <h4 style="margin: 0 0 0.75rem 0; color: #1e3a8a; font-size: 1rem; font-weight: 600;">💡 Sending
+                            Tips</h4>
+                        <ul
+                            style="margin: 0; padding-left: 1.2rem; font-size: 0.875rem; color: #1e40af; line-height: 1.8;">
+                            <li><strong>Number Format:</strong> Use country code (e.g., <code
+                                    style="background: white; padding: 0.125rem 0.375rem; border-radius: 3px; font-family: monospace;">6281...</code>).
+                                No <code
+                                    style="background: white; padding: 0.125rem 0.375rem; border-radius: 3px; font-family: monospace;">+</code>
+                                or <code
+                                    style="background: white; padding: 0.125rem 0.375rem; border-radius: 3px; font-family: monospace;">0</code>
+                                in front.</li>
+                            <li><strong>Media:</strong> Use direct URLs (ending in .jpg, .mp4).</li>
+                            <li><strong>Bulk Sending:</strong> Add delay between messages to avoid bans.</li>
+                        </ul>
+                    </div>
+
+                    <form id="message-form">
+                        <div class="grid grid-3 gap-lg">
+                            <div class="form-group">
+                                <label>Sending From</label>
+                                <select id="device-select" disabled>
+                                    <option>Select a device first</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Recipient Type</label>
+                                <select id="recipient-type">
+                                    <option value="single">👤 Single Number</option>
+                                    <option value="group">👥 Contact Group</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Message Type</label>
+                                <select id="msg-type">
+                                    <option value="text">📝 Text</option>
+                                    <option value="image">🖼 Image (URL)</option>
+                                    <option value="video">🎥 Video (URL)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group" id="phone-input-group">
+                            <label>Phone Number</label>
+                            <input type="text" id="phone" placeholder="628123456789">
+                        </div>
+
+                        <div class="form-group" id="group-input-group" style="display:none;">
+                            <label>Contact Group</label>
+                            <select id="group-select">
+                                <option value="">Select a group...</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" id="url-group" style="display:none;">
+                            <label>Media URL</label>
+                            <input type="url" id="media-url" placeholder="https://example.com/image.jpg">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Message Content / Caption</label>
+                            <textarea id="message" rows="5" placeholder="Type your message..." required></textarea>
+                        </div>
+
+                        <button type="submit" class="btn-primary" style="width: 100%;">📨 Send Message</button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Contact Groups Management Section -->
+            <section id="groups" class="view">
+                <header>
+                    <div>
+                        <h1>Contact Groups</h1>
+                        <p style="color: var(--gray-500); font-size: 0.875rem; margin-top: 0.25rem;">Manage your contact
+                            groups for bulk messaging</p>
+                    </div>
+                    <button class="btn-primary"
+                        onclick="document.getElementById('create-group-modal').style.display='flex'"
+                        style="padding: 0.75rem 1.5rem;">
+                        <span style="font-size: 1.1rem;">+</span> New Group
+                    </button>
+                </header>
+                <div class="card">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Group Name</th>
+                                <th>Members</th>
+                                <th style="text-align: right;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="groups-table-body">
+                            <!-- Groups here -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Logs Section -->
+            <section id="logs" class="view">
+                <header>
+                    <h1>Message Logs</h1>
+                </header>
+                <div class="card logs-card">
+                    <div class="logs-container" id="logs-container">
+                        <!-- Logs will be inserted here -->
+                        <div class="log-entry placeholder">No logs yet...</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Documentation Section -->
+            <section id="documentation" class="view">
+                <header>
+                    <h1>Full Service Manual</h1>
+                </header>
+
+                <div class="card" style="margin-bottom: var(--space-xl);">
+                    <h3>🛠️ Installation Guide</h3>
+                    <div style="margin-top: var(--space-lg);">
+                        <h4 style="color: var(--purple-700);">1. Prerequisites</h4>
+                        <ul>
+                            <li><strong>Node.js</strong> (v14 or newer)</li>
+                            <li><strong>MySQL</strong> (e.g., via XAMPP)</li>
+                        </ul>
+                    </div>
+                    <div style="margin-top: var(--space-lg);">
+                        <h4 style="color: var(--purple-700);">2. Database Setup</h4>
+                        <ol>
+                            <li>Open <strong>phpMyAdmin</strong> or MySQL CLI.</li>
+                            <li>Create a new database named <code>wa_gateway</code>.</li>
+                            <li>Import <strong><code>database.sql</code></strong>.</li>
+                        </ol>
+                    </div>
+                    <div style="margin-top: var(--space-lg);">
+                        <h4 style="color: var(--purple-700);">3. Configuration</h4>
+                        <p>Open <strong><code>.env</code></strong> and set your credentials:</p>
+                        <div class="code-block-wrapper">
+                            <button class="copy-btn" onclick="copyToClipboard(this, 'code-env')">📋 Copy</button>
+                            <pre id="code-env"
+                                style="background: #1e293b; color: #f8fafc; padding: 1rem; border-radius: 8px; font-size: 0.85rem;">DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=your_password
+DB_NAME=wa_gateway
+JWT_SECRET=secure_secret_key</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-bottom: var(--space-xl);">
+                    <h3>🚀 Postman Collection</h3>
+                    <p>Testing API becomes easy with our Postman Collection.</p>
+                    <a href="wa_gateway.postman_collection.json" download class="btn-primary"
+                        style="display: inline-block; margin-top: 1rem; text-decoration: none;">📥 Download Postman
+                        Collection</a>
+                </div>
+
+                <div class="card" style="margin-bottom: var(--space-xl);">
+                    <h3>🔌 REST API Guide</h3>
+                    <p><strong>Base URL:</strong> <code>http://localhost:3000</code></p>
+                    <p><strong>Auth:</strong> <code>Authorization: Bearer &lt;token&gt;</code></p>
+
+                    <div style="margin-top: var(--space-lg);">
+                        <h4 style="color: var(--purple-700);">1. Send Text Message</h4>
+                        <code
+                            style="display: block; background: #f1f5f9; padding: 1rem; border-radius: 8px; margin: 0.5rem 0;">POST /api/send-message</code>
+                        <div class="code-block-wrapper">
+                            <button class="copy-btn" onclick="copyToClipboard(this, 'code-api-text')">📋 Copy</button>
+                            <pre id="code-api-text"
+                                style="background: #1e293b; color: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem;">{
+    "deviceId": "your-device-id",
+    "number": "628123456789",
+    "message": "Hello from API!"
+}</pre>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: var(--space-lg);">
+                        <h4 style="color: var(--purple-700);">2. Send Media Message</h4>
+                        <code
+                            style="display: block; background: #f1f5f9; padding: 1rem; border-radius: 8px; margin: 0.5rem 0;">POST /api/send-media</code>
+                        <div class="code-block-wrapper">
+                            <button class="copy-btn" onclick="copyToClipboard(this, 'code-api-media')">📋 Copy</button>
+                            <pre id="code-api-media"
+                                style="background: #1e293b; color: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem;">{
+    "deviceId": "your-device-id",
+    "number": "628123456789",
+    "type": "image",
+    "url": "https://example.com/image.jpg",
+    "caption": "Check this out!"
+}</pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>💻 Code Integration Examples</h3>
+
+                    <div style="margin-top: var(--space-lg); border-bottom: 1px solid #eee; padding-bottom: 1.5rem;">
+                        <h4 style="color: var(--purple-700);">🐘 PHP (cURL)</h4>
+
+                        <p style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">Send Text:</p>
+                        <div class="code-block-wrapper">
+                            <button class="copy-btn" onclick="copyToClipboard(this, 'code-php-text')">📋 Copy</button>
+                            <pre id="code-php-text"
+                                style="background: #1e293b; color: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem; margin-bottom: 1rem;">$ch = curl_init('http://localhost:3000/api/send-message');
+curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $token, 'Content-Type: application/json']);
+curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
+    'deviceId' => 'device-01',
+    'number' => '628...', 
+    'message' => 'Hello'
+]));
+$res = curl_exec($ch);</pre>
+                        </div>
+
+                        <p style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">Send Image/Video:</p>
+                        <div class="code-block-wrapper">
+                            <button class="copy-btn" onclick="copyToClipboard(this, 'code-php-media')">📋 Copy</button>
+                            <pre id="code-php-media"
+                                style="background: #1e293b; color: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem;">$ch = curl_init('http://localhost:3000/api/send-media');
+curl_setopt($ch, CURLOPT_HTTPHEADER, ['Authorization: Bearer ' . $token, 'Content-Type: application/json']);
+curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
+    'deviceId' => 'device-01',
+    'number' => '628...', 
+    'type' => 'image', // error 'video'
+    'url' => 'https://example.com/media.jpg',
+    'caption' => 'Media Caption'
+]));
+$res = curl_exec($ch);</pre>
+                        </div>
+                    </div>
+
+                    <!-- JavaScript -->
+                    <div style="margin-top: var(--space-xl); border-bottom: 1px solid #eee; padding-bottom: 1.5rem;">
+                        <h4 style="color: var(--purple-700);">🟨 JavaScript (Fetch)</h4>
+                        <div class="code-block-wrapper">
+                            <button class="copy-btn" onclick="copyToClipboard(this, 'code-js')">📋 Copy</button>
+                            <pre id="code-js"
+                                style="background: #1e293b; color: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem;">await fetch('http://localhost:3000/api/send-message', {
+    method: 'POST',
+    headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json' 
+    },
+    body: JSON.stringify({
+        deviceId: 'device-01',
+        number: '628123456789',
+        message: 'Hello World'
+    })
+});</pre>
+                        </div>
+                    </div>
+
+                    <!-- Python -->
+                    <div style="margin-top: var(--space-xl); border-bottom: 1px solid #eee; padding-bottom: 1.5rem;">
+                        <h4 style="color: var(--purple-700);">🐍 Python (Requests)</h4>
+                        <div class="code-block-wrapper">
+                            <button class="copy-btn" onclick="copyToClipboard(this, 'code-python')">📋 Copy</button>
+                            <pre id="code-python"
+                                style="background: #1e293b; color: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem;">import requests
+
+url = "http://localhost:3000/api/send-message"
+headers = {"Authorization": "Bearer YOUR_TOKEN"}
+payload = {
+    "deviceId": "device-01",
+    "number": "628123456789",
+    "message": "Hello from Python"
+}
+
+response = requests.post(url, json=payload, headers=headers)
+print(response.json())</pre>
+                        </div>
+                    </div>
+
+                    <!-- Go -->
+                    <div style="margin-top: var(--space-xl); border-bottom: 1px solid #eee; padding-bottom: 1.5rem;">
+                        <h4 style="color: var(--purple-700);">🔵 Go (Native)</h4>
+                        <div class="code-block-wrapper">
+                            <button class="copy-btn" onclick="copyToClipboard(this, 'code-go')">📋 Copy</button>
+                            <pre id="code-go"
+                                style="background: #1e293b; color: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem;">import (
+    "bytes"
+    "net/http"
+)
+
+func sendMessage() {
+    url := "http://localhost:3000/api/send-message"
+    jsonStr := []byte(`{"deviceId":"id","number":"628...","message":"Hi"}`)
+    req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
+    req.Header.Set("Authorization", "Bearer TOKEN")
+    req.Header.Set("Content-Type", "application/json")
+    
+    client := &http.Client{}
+    resp, _ := client.Do(req)
+    defer resp.Body.Close()
+}</pre>
+                        </div>
+                    </div>
+
+                    <!-- Java -->
+                    <div style="margin-top: var(--space-xl); border-bottom: 1px solid #eee; padding-bottom: 1.5rem;">
+                        <h4 style="color: var(--purple-700);">☕ Java (OkHttp)</h4>
+                        <div class="code-block-wrapper">
+                            <button class="copy-btn" onclick="copyToClipboard(this, 'code-java')">📋 Copy</button>
+                            <pre id="code-java"
+                                style="background: #1e293b; color: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem;">OkHttpClient client = new OkHttpClient();
+MediaType mediaType = MediaType.parse("application/json");
+RequestBody body = RequestBody.create(mediaType, "{\"deviceId\":\"id\",\"number\":\"628...\",\"message\":\"Hi\"}");
+Request request = new Request.Builder()
+  .url("http://localhost:3000/api/send-message")
+  .post(body)
+  .addHeader("Authorization", "Bearer TOKEN")
+  .build();
+Response response = client.newCall(request).execute();</pre>
+                        </div>
+                    </div>
+
+                    <!-- .NET -->
+                    <div style="margin-top: var(--space-xl);">
+                        <h4 style="color: var(--purple-700);">🔷 .NET (C#)</h4>
+                        <div class="code-block-wrapper">
+                            <button class="copy-btn" onclick="copyToClipboard(this, 'code-dotnet')">📋 Copy</button>
+                            <pre id="code-dotnet"
+                                style="background: #1e293b; color: #f8fafc; padding: 1rem; border-radius: 8px; overflow-x: auto; font-size: 0.85rem;">using var client = new HttpClient();
+client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "TOKEN");
+
+var payload = new { deviceId = "id", number = "628...", message = "Hello" };
+var response = await client.PostAsJsonAsync("http://localhost:3000/api/send-message", payload);
+var content = await response.Content.ReadAsStringAsync();</pre>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+
+
+    <!-- Add Device Modal -->
+    <div id="modal-overlay"
+        style="display:none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+        <div class="card" style="width: 300px;">
+            <h3>Add New Device</h3>
+            <div class="form-group">
+                <label>Device ID (Unique)</label>
+                <input type="text" id="new-device-id" placeholder="my-business-wa">
+            </div>
+            <div class="form-group">
+                <label>Display Name</label>
+                <input type="text" id="new-device-name" placeholder="Business WA">
+            </div>
+            <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                <button id="cancel-add-btn"
+                    style="flex: 1; padding: 0.5rem; border: 1px solid #ccc; background: white; border-radius: 6px;">Cancel</button>
+                <button id="confirm-add-btn" class="btn-primary" style="flex: 1;">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Group Modal -->
+    <div id="create-group-modal" class="modal-overlay"
+        style="display:none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+        <div class="card" style="width: 300px;">
+            <h3>Create New Group</h3>
+            <input type="text" id="new-group-name" placeholder="Group Name (e.g. VIP)"
+                style="width: 100%; padding: 0.5rem; margin: 1rem 0; border: 1px solid #ccc; border-radius: 4px;">
+            <div style="display: flex; gap: 0.5rem;">
+                <button onclick="document.getElementById('create-group-modal').style.display='none'"
+                    style="flex: 1; padding: 0.5rem;">Cancel</button>
+                <button id="save-group-btn" class="btn-primary" style="flex: 1;" onclick="saveGroup()"
+                    type="button">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Group Members Modal -->
+    <div id="members-modal" class="modal-overlay"
+        style="display:none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(3px);">
+        <div class="card"
+            style="width: 650px; max-height: 85vh; display: flex; flex-direction: column; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+            <!-- Header -->
+            <header
+                style="display: flex; justify-content: space-between; align-items: center; padding: 1.5rem; border-bottom: 2px solid #e2e8f0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 12px 12px 0 0;">
+                <div>
+                    <h3 id="members-modal-title" style="margin: 0; font-size: 1.3rem; font-weight: 600;">Group Members
+                    </h3>
+                    <p style="margin: 0.25rem 0 0 0; font-size: 0.85rem; opacity: 0.9;">Manage your group contacts</p>
+                </div>
+                <button onclick="document.getElementById('members-modal').style.display='none'"
+                    style="background: rgba(255,255,255,0.2); border: none; width: 32px; height: 32px; border-radius: 50%; font-size: 1.5rem; cursor: pointer; color: white; display: flex; align-items: center; justify-content: center; transition: all 0.2s;"
+                    onmouseover="this.style.background='rgba(255,255,255,0.3)'"
+                    onmouseout="this.style.background='rgba(255,255,255,0.2)'">&times;</button>
+            </header>
+
+            <!-- Add Member Form -->
+            <div style="padding: 1.5rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                <div style="margin-bottom: 1rem;">
+                    <label
+                        style="display: block; font-weight: 600; color: #475569; margin-bottom: 0.5rem; font-size: 0.9rem;">Phone
+                        Number</label>
+                    <input type="text" id="new-member-number" placeholder="628123456789"
+                        style="width: 100%; padding: 1rem; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 1rem; transition: all 0.2s; box-sizing: border-box;"
+                        onfocus="this.style.borderColor='#667eea'; this.style.boxShadow='0 0 0 3px rgba(102,126,234,0.1)'"
+                        onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label
+                        style="display: block; font-weight: 600; color: #475569; margin-bottom: 0.5rem; font-size: 0.9rem;">Name
+                        (Optional)</label>
+                    <input type="text" id="new-member-name" placeholder="Enter name"
+                        style="width: 100%; padding: 1rem; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 1rem; transition: all 0.2s; box-sizing: border-box;"
+                        onfocus="this.style.borderColor='#667eea'; this.style.boxShadow='0 0 0 3px rgba(102,126,234,0.1)'"
+                        onblur="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none'">
+                </div>
+                <button id="add-member-btn" class="btn-primary" onclick="addMember()" type="button"
+                    style="width: 100%; padding: 1rem; border-radius: 8px; font-weight: 600; font-size: 1.1rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; color: white; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(102,126,234,0.3);"
+                    onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(102,126,234,0.4)'"
+                    onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(102,126,234,0.3)'">
+                    <span style="font-size: 1.2rem;">+</span> Add Member
+                </button>
+            </div>
+
+            <!-- Members List -->
+            <div style="overflow-y: auto; flex: 1; padding: 1rem;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f1f5f9; border-radius: 6px;">
+                            <th
+                                style="padding: 0.75rem; text-align: left; font-weight: 600; color: #475569; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                                Phone Number</th>
+                            <th
+                                style="padding: 0.75rem; text-align: left; font-weight: 600; color: #475569; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                                Name</th>
+                            <th
+                                style="padding: 0.75rem; text-align: right; font-weight: 600; color: #475569; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                                Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="members-table-body">
+                        <!-- Members will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+
+</html>
