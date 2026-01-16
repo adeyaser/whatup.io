@@ -8,7 +8,28 @@ const pool = mysql.createPool({
     database: process.env.DB_NAME || 'wa_gateway',
     waitForConnections: true,
     connectionLimit: 10,
-    queueLimit: 0
+    queueLimit: 0,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 0
+});
+
+// Test connection on initialization
+pool.getConnection()
+    .then(connection => {
+        console.log('Database connection established');
+        connection.release();
+    })
+    .catch(error => {
+        console.error('Database connection error:', error.message);
+        // Don't throw - allow app to start but operations will fail gracefully
+    });
+
+// Handle pool errors
+pool.on('error', (err) => {
+    console.error('Database pool error:', err);
+    if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+        console.log('Database connection lost. Attempting to reconnect...');
+    }
 });
 
 module.exports = pool;

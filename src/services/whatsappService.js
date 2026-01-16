@@ -10,109 +10,144 @@ const sessions = new Map();
 let io;
 
 const initWhatsApp = async (socketIo) => {
-    io = socketIo;
+    try {
+        io = socketIo;
 
-    // Load existing devices from DB and start them
-    const [rows] = await pool.query('SELECT device_id FROM devices');
-    for (const row of rows) {
-        startSession(row.device_id);
+        // Load existing devices from DB and start them
+        const [rows] = await pool.query('SELECT device_id FROM devices');
+        for (const row of rows) {
+            startSession(row.device_id).catch(err => {
+                console.error(`Failed to start session for device ${row.device_id}:`, err);
+            });
+        }
+    } catch (error) {
+        console.error('Error initializing WhatsApp:', error);
+        // Don't throw - allow app to continue even if initialization fails
     }
 };
 
 const startSession = async (deviceId) => {
-    console.log(`Starting session for device: ${deviceId}`);
-    // Pass deviceId to state handler to prefix keys
-    const { state, saveCreds } = await useMySQLAuthState(deviceId);
-    const { version } = await fetchLatestBaileysVersion();
+    try {
+        console.log(`Starting session for device: ${deviceId}`);
+        // Pass deviceId to state handler to prefix keys
+        const { state, saveCreds } = await useMySQLAuthState(deviceId);
+        const { version } = await fetchLatestBaileysVersion();
 
-    const sock = makeWASocket({
-        version,
-        logger: pino({ level: 'silent' }),
-        printQRInTerminal: false,
-        auth: state,
-        browser: ['WA Gateway', 'Chrome', '1.0.0'],
-        generateHighQualityLinkPreview: true,
-    });
+        const sock = makeWASocket({
+            version,
+            logger: pino({ level: 'silent' }),
+            printQRInTerminal: false,
+            auth: state,
+            browser: ['WA Gateway', 'Chrome', '1.0.0'],
+            generateHighQualityLinkPreview: true,
+        });
 
-    sessions.set(deviceId, sock);
+        sessions.set(deviceId, sock);
 
-    sock.ev.on('connection.update', async (update) => {
-        const { connection, lastDisconnect, qr } = update;
+        sock.ev.on('connection.update', async (update) => {
+            try {
+                const { connection, lastDisconnect, qr } = update;
 
-        if (qr) {
-            QRCode.toDataURL(qr, (err, url) => {
-                if (!err) {
-                    io.emit(`qr_code:${deviceId}`, url);
-                    console.log(`QR Code emitted for ${deviceId}`);
+                if (qr) {
+                    QRCode.toDataURL(qr, (err, url) => {
+                        if (!err && io) {
+                            io.emit(`qr_code:${deviceId}`, url);
+                            console.log(`QR Code emitted for ${deviceId}`);
+                        }
+                    });
+                    // Update status in DB
+                    try {
+                        await pool.query('UPDATE devices SET status = ? WHERE device_id = ?', ['scanning', deviceId]);
+                        if (io) io.emit('device_status', { deviceId, status: 'scanning' });
+                    } catch (err) {
+                        console.error('Error updating device status:', err);
+                    }
                 }
-            });
-            // Update status in DB
-            await pool.query('UPDATE devices SET status = ? WHERE device_id = ?', ['scanning', deviceId]);
-            io.emit('device_status', { deviceId, status: 'scanning' });
-        }
 
-        if (connection === 'close') {
-            const shouldReconnect = (lastDisconnect.error instanceof Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
-            console.log(`Connection closed for ${deviceId}. Reconnecting:`, shouldReconnect);
+                if (connection === 'close') {
+                    const shouldReconnect = (lastDisconnect?.error instanceof Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
+                    console.log(`Connection closed for ${deviceId}. Reconnecting:`, shouldReconnect);
 
-            if (shouldReconnect) {
-                // Emit connecting status before restarting
-                io.emit('device_status', { deviceId, status: 'connecting' });
-                startSession(deviceId);
-            } else {
-                console.log(`Device ${deviceId} logged out.`);
-                await pool.query('UPDATE devices SET status = ? WHERE device_id = ?', ['disconnected', deviceId]);
-                io.emit('device_status', { deviceId, status: 'disconnected' });
-                // Clean up session data if needed
-                sessions.delete(deviceId);
+                    if (shouldReconnect) {
+                        // Emit connecting status before restarting
+                        if (io) io.emit('device_status', { deviceId, status: 'connecting' });
+                        startSession(deviceId).catch(err => {
+                            console.error(`Error reconnecting device ${deviceId}:`, err);
+                        });
+                    } else {
+                        console.log(`Device ${deviceId} logged out.`);
+                        try {
+                            await pool.query('UPDATE devices SET status = ? WHERE device_id = ?', ['disconnected', deviceId]);
+                            if (io) io.emit('device_status', { deviceId, status: 'disconnected' });
+                        } catch (err) {
+                            console.error('Error updating device status:', err);
+                        }
+                        // Clean up session data if needed
+                        sessions.delete(deviceId);
+                    }
+                } else if (connection === 'open') {
+                    console.log(`Opened connection for ${deviceId}`);
+                    const user = sock.user;
+                    try {
+                        await pool.query('UPDATE devices SET status = ?, name = ? WHERE device_id = ?', ['connected', user?.name || user?.id || deviceId, deviceId]);
+                        if (io) io.emit('device_status', { deviceId, status: 'connected', user });
+                    } catch (err) {
+                        console.error('Error updating device status:', err);
+                    }
+                } else if (connection === 'connecting') {
+                    if (io) io.emit('device_status', { deviceId, status: 'connecting' });
+                }
+            } catch (error) {
+                console.error(`Error in connection.update for device ${deviceId}:`, error);
             }
-        } else if (connection === 'open') {
-            console.log(`Opened connection for ${deviceId}`);
-            const user = sock.user;
-            await pool.query('UPDATE devices SET status = ?, name = ? WHERE device_id = ?', ['connected', user.name || user.id, deviceId]);
-            io.emit('device_status', { deviceId, status: 'connected', user });
-        } else if (connection === 'connecting') {
-            io.emit('device_status', { deviceId, status: 'connecting' });
-        }
-    });
+        });
 
-    sock.ev.on('creds.update', saveCreds);
+        sock.ev.on('creds.update', saveCreds);
 
-    sock.ev.on('messages.upsert', async (m) => {
-        const msg = m.messages[0];
-        if (!msg.message || msg.key.fromMe) return;
+        sock.ev.on('messages.upsert', async (m) => {
+            try {
+                const msg = m.messages[0];
+                if (!msg.message || msg.key.fromMe) return;
 
-        const remoteJid = msg.key.remoteJid;
-        const messageType = Object.keys(msg.message)[0];
-        const content = JSON.stringify(msg.message);
+                const remoteJid = msg.key.remoteJid;
+                const messageType = Object.keys(msg.message)[0];
+                const content = JSON.stringify(msg.message);
 
-        // Extract text
-        let text = '';
-        if (messageType === 'conversation') text = msg.message.conversation;
-        else if (messageType === 'extendedTextMessage') text = msg.message.extendedTextMessage.text;
-        else if (messageType === 'imageMessage') text = '[Image] ' + (msg.message.imageMessage.caption || '');
-        else if (messageType === 'videoMessage') text = '[Video] ' + (msg.message.videoMessage.caption || '');
+                // Extract text
+                let text = '';
+                if (messageType === 'conversation') text = msg.message.conversation;
+                else if (messageType === 'extendedTextMessage') text = msg.message.extendedTextMessage.text;
+                else if (messageType === 'imageMessage') text = '[Image] ' + (msg.message.imageMessage.caption || '');
+                else if (messageType === 'videoMessage') text = '[Video] ' + (msg.message.videoMessage.caption || '');
 
-        console.log(`[${deviceId}] Received message from ${remoteJid}: ${text}`);
+                console.log(`[${deviceId}] Received message from ${remoteJid}: ${text}`);
 
-        // Save to DB
-        try {
-            await pool.query(
-                'INSERT INTO message_logs (remote_jid, direction, type, content, status, device_id) VALUES (?, ?, ?, ?, ?, ?)',
-                [remoteJid, 'IN', messageType, text || content, 'received', deviceId]
-            );
+                // Save to DB
+                try {
+                    await pool.query(
+                        'INSERT INTO message_logs (remote_jid, direction, type, content, status, device_id) VALUES (?, ?, ?, ?, ?, ?)',
+                        [remoteJid, 'IN', messageType, text || content, 'received', deviceId]
+                    );
 
-            io.emit('new_message', {
-                deviceId,
-                from: remoteJid,
-                message: text,
-                timestamp: new Date()
-            });
-
-        } catch (err) {
-            console.error('Error saving message log:', err);
-        }
-    });
+                    if (io) {
+                        io.emit('new_message', {
+                            deviceId,
+                            from: remoteJid,
+                            message: text,
+                            timestamp: new Date()
+                        });
+                    }
+                } catch (err) {
+                    console.error('Error saving message log:', err);
+                }
+            } catch (error) {
+                console.error(`Error in messages.upsert for device ${deviceId}:`, error);
+            }
+        });
+    } catch (error) {
+        console.error(`Error starting session for device ${deviceId}:`, error);
+        throw error;
+    }
 };
 
 const createDevice = async (deviceId, name = 'New Device') => {

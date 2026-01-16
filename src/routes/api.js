@@ -39,7 +39,12 @@ router.get('/logs', async (req, res) => {
         const [rows] = await pool.query('SELECT * FROM message_logs ORDER BY created_at DESC LIMIT 100');
         res.json({ status: true, data: rows });
     } catch (e) {
-        res.status(500).json({ status: false, message: 'Failed to fetch logs' });
+        console.error('Error fetching logs:', e);
+        res.status(500).json({ 
+            status: false, 
+            message: 'Failed to fetch logs',
+            error: process.env.NODE_ENV === 'development' ? e.message : undefined
+        });
     }
 });
 

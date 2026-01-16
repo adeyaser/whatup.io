@@ -31,8 +31,12 @@ router.post('/login', async (req, res) => {
         res.json({ status: true, token, user: { id: user.id, username: user.username } });
 
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ status: false, message: 'Server error' });
+        console.error('Login error:', error);
+        res.status(500).json({ 
+            status: false, 
+            message: 'Server error',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 });
 

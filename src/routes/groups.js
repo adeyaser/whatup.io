@@ -16,7 +16,12 @@ router.get('/', async (req, res) => {
         }
         res.json({ status: true, data: rows });
     } catch (e) {
-        res.status(500).json({ status: false, message: e.message });
+        console.error('Error fetching groups:', e);
+        res.status(500).json({ 
+            status: false, 
+            message: 'Failed to fetch groups',
+            error: process.env.NODE_ENV === 'development' ? e.message : undefined
+        });
     }
 });
 
@@ -28,7 +33,12 @@ router.post('/create', async (req, res) => {
         const [result] = await pool.query('INSERT INTO contact_groups (name) VALUES (?)', [name]);
         res.json({ status: true, message: 'Group created', id: result.insertId });
     } catch (e) {
-        res.status(500).json({ status: false, message: e.message });
+        console.error('Error creating group:', e);
+        res.status(500).json({ 
+            status: false, 
+            message: 'Failed to create group',
+            error: process.env.NODE_ENV === 'development' ? e.message : undefined
+        });
     }
 });
 
@@ -39,7 +49,12 @@ router.post('/delete', async (req, res) => {
         await pool.query('DELETE FROM contact_groups WHERE id = ?', [id]);
         res.json({ status: true, message: 'Group deleted' });
     } catch (e) {
-        res.status(500).json({ status: false, message: e.message });
+        console.error('Error deleting group:', e);
+        res.status(500).json({ 
+            status: false, 
+            message: 'Failed to delete group',
+            error: process.env.NODE_ENV === 'development' ? e.message : undefined
+        });
     }
 });
 
@@ -51,7 +66,12 @@ router.get('/:groupId/members', async (req, res) => {
         const [rows] = await pool.query('SELECT * FROM group_members WHERE group_id = ? ORDER BY created_at ASC', [req.params.groupId]);
         res.json({ status: true, data: rows });
     } catch (e) {
-        res.status(500).json({ status: false, message: e.message });
+        console.error('Error fetching group members:', e);
+        res.status(500).json({ 
+            status: false, 
+            message: 'Failed to fetch group members',
+            error: process.env.NODE_ENV === 'development' ? e.message : undefined
+        });
     }
 });
 
@@ -63,7 +83,12 @@ router.post('/manage/add-member', async (req, res) => {
         await pool.query('INSERT INTO group_members (group_id, number, name) VALUES (?, ?, ?)', [groupId, number, name || '']);
         res.json({ status: true, message: 'Member added' });
     } catch (e) {
-        res.status(500).json({ status: false, message: e.message });
+        console.error('Error adding member:', e);
+        res.status(500).json({ 
+            status: false, 
+            message: 'Failed to add member',
+            error: process.env.NODE_ENV === 'development' ? e.message : undefined
+        });
     }
 });
 
@@ -74,7 +99,12 @@ router.post('/manage/remove-member', async (req, res) => {
         await pool.query('DELETE FROM group_members WHERE id = ?', [id]);
         res.json({ status: true, message: 'Member removed' });
     } catch (e) {
-        res.status(500).json({ status: false, message: e.message });
+        console.error('Error removing member:', e);
+        res.status(500).json({ 
+            status: false, 
+            message: 'Failed to remove member',
+            error: process.env.NODE_ENV === 'development' ? e.message : undefined
+        });
     }
 });
 
@@ -91,11 +121,18 @@ router.post('/send-bulk', async (req, res) => {
         if (members.length === 0) return res.status(400).json({ status: false, message: 'Group is empty' });
 
         // Start processing in background
-        processBulkSend(deviceId, members, { message, type, url, caption: caption || message });
+        processBulkSend(deviceId, members, { message, type, url, caption: caption || message }).catch(err => {
+            console.error('Bulk send error:', err);
+        });
 
         res.json({ status: true, message: `Bulk sending started for ${members.length} contacts.` });
     } catch (e) {
-        res.status(500).json({ status: false, message: e.message });
+        console.error('Error starting bulk send:', e);
+        res.status(500).json({ 
+            status: false, 
+            message: 'Failed to start bulk send',
+            error: process.env.NODE_ENV === 'development' ? e.message : undefined
+        });
     }
 });
 
