@@ -5,7 +5,19 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node src/app.js"
+    "start": "node src/app.js",
+    "dev": "NODE_ENV=development node src/app.js",
+    "prod": "NODE_ENV=production node src/app.js",
+    "pm2:start": "pm2 start ecosystem.config.js --env production",
+    "pm2:stop": "pm2 stop wa-gateway",
+    "pm2:restart": "pm2 restart wa-gateway",
+    "pm2:logs": "pm2 logs wa-gateway",
+    "pm2:delete": "pm2 delete wa-gateway",
+    "docker:build": "docker build -t wa-gateway:latest .",
+    "docker:up": "docker-compose -f docker-compose.yml up -d",
+    "docker:down": "docker-compose -f docker-compose.yml down",
+    "docker:logs": "docker-compose -f docker-compose.yml logs -f wa-gateway",
+    "docker:restart": "docker-compose -f docker-compose.yml restart wa-gateway"
   },
   "keywords": [],
   "author": "",

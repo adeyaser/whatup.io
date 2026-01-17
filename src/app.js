@@ -12,18 +12,38 @@ require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
+
+// Configure CORS for production domain
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || '*').split(',').map(o => o.trim());
 const io = new Server(server, {
     cors: {
-        origin: "*",
-        methods: ["GET", "POST"]
+        origin: allowedOrigins,
+        methods: ["GET", "POST"],
+        credentials: true
     }
 });
 
 // Middleware
-app.use(cors());
+const corsOptions = {
+    origin: allowedOrigins,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+};
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, '../public')));
+
+// Health check endpoint (untuk monitoring & Docker health check)
+app.get('/health', (req, res) => {
+    res.status(200).json({ 
+        status: 'ok', 
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        environment: process.env.NODE_ENV || 'development'
+    });
+});
 
 // Serve Documentation
 app.get('/API_DOCS.md', (req, res) => {
@@ -100,6 +120,8 @@ io.on('connection', (socket) => {
 initWhatsApp(io).catch(err => console.error('Failed to initialize WhatsApp:', err));
 
 const PORT = process.env.PORT || 3000;
+const NODE_ENV = process.env.NODE_ENV || 'development';
 server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`Server running on port ${PORT} (${NODE_ENV})`);
+    console.log(`App URL: ${process.env.APP_URL || 'http://localhost:' + PORT}`);
 });

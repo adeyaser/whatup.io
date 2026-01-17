@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  # WhatsApp Gateway Application
+  wa-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wa-gateway
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - APP_URL=${APP_URL}
+      - FRONTEND_URL=${FRONTEND_URL}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+      - DB_HOST=${DB_HOST}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - DB_PORT=${DB_PORT}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRE=24h
+    volumes:
+      - ./sessions:/app/sessions
+      - ./logs:/app/logs
+    networks:
+      - wa-network
+    depends_on:
+      - mysql
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: wa-gateway-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database.sql:/docker-entrypoint-initdb.d/database.sql
+      - ./groups_schema.sql:/docker-entrypoint-initdb.d/groups_schema.sql
+    networks:
+      - wa-network
+    command: --default-authentication-plugin=mysql_native_password
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: wa-gateway-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./public:/app/public:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      - ./logs:/var/log/nginx
+    networks:
+      - wa-network
+    depends_on:
+      - wa-gateway
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  wa-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local

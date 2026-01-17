@@ -1,0 +1,27 @@
+[Unit]
+Description=WhatsApp Gateway Service
+After=network.target
+
+[Service]
+Type=simple
+User=node
+WorkingDirectory=/home/node/apps/wa-gateway/waweb
+ExecStart=/usr/bin/node src/app.js
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=wa-gateway
+Environment="NODE_ENV=production"
+Environment="PORT=3001"
+
+# Resource limits
+MemoryLimit=1G
+CPUQuota=50%
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
