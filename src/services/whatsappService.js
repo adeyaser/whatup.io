@@ -1,9 +1,17 @@
-const { default: makeWASocket, DisconnectReason, useMultiFileAuthState, fetchLatestBaileysVersion } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 const QRCode = require('qrcode');
 const pool = require('../config/database');
 const useMySQLAuthState = require('./authStore');
 const { Boom } = require('@hapi/boom');
+
+// Lazy load baileys module (ESM)
+let baileysModule = null;
+const getBaileys = async () => {
+    if (!baileysModule) {
+        baileysModule = await import('@whiskeysockets/baileys');
+    }
+    return baileysModule;
+};
 
 // Map to store active sessions: deviceId -> socket instance
 const sessions = new Map();
@@ -29,6 +37,12 @@ const initWhatsApp = async (socketIo) => {
 const startSession = async (deviceId) => {
     try {
         console.log(`Starting session for device: ${deviceId}`);
+        
+        // Load baileys module
+        const baileys = await getBaileys();
+        const makeWASocket = baileys.default;
+        const { DisconnectReason, fetchLatestBaileysVersion } = baileys;
+        
         // Pass deviceId to state handler to prefix keys
         const { state, saveCreds } = await useMySQLAuthState(deviceId);
         const { version } = await fetchLatestBaileysVersion();
@@ -46,6 +60,10 @@ const startSession = async (deviceId) => {
 
         sock.ev.on('connection.update', async (update) => {
             try {
+                // Load baileys once for this handler
+                const baileys = await getBaileys();
+                const { DisconnectReason } = baileys;
+                
                 const { connection, lastDisconnect, qr } = update;
 
                 if (qr) {

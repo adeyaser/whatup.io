@@ -1,7 +1,18 @@
 const pool = require('../config/database');
-const { initAuthCreds, BufferJSON, proto } = require('@whiskeysockets/baileys');
+
+// Lazy load baileys module (ESM)
+let baileysModule = null;
+const getBaileys = async () => {
+    if (!baileysModule) {
+        baileysModule = await import('@whiskeysockets/baileys');
+    }
+    return baileysModule;
+};
 
 const useMySQLAuthState = async (collectionId = 'default') => {
+    // Load baileys module
+    const baileys = await getBaileys();
+    const { initAuthCreds, BufferJSON, proto } = baileys;
 
     // Helper to get table key
     const getKey = (type, id) => {
