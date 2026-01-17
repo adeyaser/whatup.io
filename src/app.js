@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const http = require('http');
 const { Server } = require("socket.io");
@@ -8,7 +10,6 @@ const apiRoutes = require('./routes/api');
 const authRoutes = require('./routes/auth');
 const groupRoutes = require('./routes/groups');
 const authenticateToken = require('./middleware/auth');
-require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
@@ -89,11 +90,29 @@ app.get('/api/devices', authenticateToken, async (req, res) => {
     const pool = require('./config/database');
     try {
         const [rows] = await pool.query('SELECT device_id, name, status, created_at FROM devices');
-        // Add active status from in-memory sessions
-        const devices = rows.map(d => ({
-            ...d,
-            online: sessions.has(d.device_id)
-        }));
+        
+        // Add online status dan icon indicator
+        const devices = rows.map(d => {
+            const isOnline = sessions.has(d.device_id);
+            const statusMap = {
+                'connected': { icon: '🟢', label: 'Connected', color: 'success' },
+                'connecting': { icon: '🟡', label: 'Connecting', color: 'warning' },
+                'scanning': { icon: '🔵', label: 'Scanning QR', color: 'info' },
+                'disconnected': { icon: '🔴', label: 'Disconnected', color: 'danger' }
+            };
+            
+            const currentStatus = statusMap[d.status] || statusMap['disconnected'];
+            
+            return {
+                ...d,
+                online: isOnline,
+                statusIcon: currentStatus.icon,
+                statusLabel: currentStatus.label,
+                statusColor: currentStatus.color,
+                displayStatus: `${currentStatus.icon} ${currentStatus.label}`
+            };
+        });
+        
         res.json({ status: true, data: devices });
     } catch (e) {
         res.status(500).json({ status: false, message: 'Error fetching devices' });
@@ -121,7 +140,9 @@ initWhatsApp(io).catch(err => console.error('Failed to initialize WhatsApp:', er
 
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
+const APP_URL = process.env.APP_URL || `http://localhost:${PORT}`;
+
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT} (${NODE_ENV})`);
-    console.log(`App URL: ${process.env.APP_URL || 'https://whatup.galerilittlehomemontessori.my.id/' + PORT}`);
+    console.log(`App URL: ${APP_URL}`);
 });

@@ -3,6 +3,7 @@ const QRCode = require('qrcode');
 const pool = require('../config/database');
 const useMySQLAuthState = require('./authStore');
 const { Boom } = require('@hapi/boom');
+require('dotenv').config();
 
 // Lazy load baileys module (ESM)
 let baileysModule = null;
@@ -13,9 +14,34 @@ const getBaileys = async () => {
     return baileysModule;
 };
 
+// Extract domain name from APP_URL untuk dynamic server name
+const getDomainName = () => {
+    try {
+        const appUrl = process.env.APP_URL || 'localhost';
+        const url = new URL(appUrl);
+        const hostname = url.hostname;
+        // Extract main domain (e.g., "galerilittlehomemontessori" dari "whatup.galerilittlehomemontessori.my.id")
+        const parts = hostname.split('.');
+        return parts.length > 0 ? parts[0] : 'WA-Gateway';
+    } catch (error) {
+        return 'WA-Gateway';
+    }
+};
+
 // Map to store active sessions: deviceId -> socket instance
 const sessions = new Map();
 let io;
+
+// Suppress libsignal MAC errors (suppress repetitive error logs)
+const originalConsoleError = console.error;
+console.error = function(...args) {
+    const errorMsg = args[0]?.toString?.() || '';
+    // Skip repetitive MAC/BAD_MAC errors
+    if (errorMsg.includes('Bad MAC') || errorMsg.includes('Failed to decrypt message')) {
+        return;
+    }
+    originalConsoleError.apply(console, args);
+};
 
 const initWhatsApp = async (socketIo) => {
     try {
@@ -52,11 +78,25 @@ const startSession = async (deviceId) => {
             logger: pino({ level: 'silent' }),
             printQRInTerminal: false,
             auth: state,
-            browser: ['WA Gateway', 'Chrome', '1.0.0'],
+            browser: [getDomainName(), 'Chrome', '1.0.0'],
             generateHighQualityLinkPreview: true,
         });
 
         sessions.set(deviceId, sock);
+
+        // Handle socket errors (Bad MAC, session corruption, etc)
+        sock.ev.on('connection.error', (error) => {
+            const errMsg = error?.message?.toString?.() || '';
+            if (errMsg.includes('Bad MAC') || errMsg.includes('SESSION_')) {
+                console.warn(`[${deviceId}] ⚠️ Session encryption error detected - attempting recovery`);
+                // Trigger reconnect to fix session
+                setTimeout(() => {
+                    sock.end(undefined);
+                    sessions.delete(deviceId);
+                    startSession(deviceId).catch(e => console.error(`Recovery failed for ${deviceId}:`, e.message));
+                }, 2000);
+            }
+        });
 
         sock.ev.on('connection.update', async (update) => {
             try {
@@ -138,26 +178,7 @@ const startSession = async (deviceId) => {
                 else if (messageType === 'imageMessage') text = '[Image] ' + (msg.message.imageMessage.caption || '');
                 else if (messageType === 'videoMessage') text = '[Video] ' + (msg.message.videoMessage.caption || '');
 
-                console.log(`[${deviceId}] Received message from ${remoteJid}: ${text}`);
-
-                // Save to DB
-                try {
-                    await pool.query(
-                        'INSERT INTO message_logs (remote_jid, direction, type, content, status, device_id) VALUES (?, ?, ?, ?, ?, ?)',
-                        [remoteJid, 'IN', messageType, text || content, 'received', deviceId]
-                    );
-
-                    if (io) {
-                        io.emit('new_message', {
-                            deviceId,
-                            from: remoteJid,
-                            message: text,
-                            timestamp: new Date()
-                        });
-                    }
-                } catch (err) {
-                    console.error('Error saving message log:', err);
-                }
+                // No message logging - messages not saved to database
             } catch (error) {
                 console.error(`Error in messages.upsert for device ${deviceId}:`, error);
             }

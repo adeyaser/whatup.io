@@ -198,10 +198,18 @@ function renderDeviceList(devices) {
         const div = document.createElement('div');
         div.className = `menu-item device-item ${currentDeviceId === d.device_id ? 'active' : ''}`;
         div.style.cursor = 'pointer';
+        
+        // Status icon dari response
+        const statusIcon = d.statusIcon || (d.online ? '🟢' : '🔴');
+        const statusLabel = d.statusLabel || d.status;
+        const statusDisplay = `${statusIcon} ${statusLabel}`;
+        
         div.innerHTML = `
-            <span class="icon" style="font-size: 0.8em;">${d.online ? '🟢' : '🔴'}</span> 
-            ${d.name} <span style="font-size: 0.7em; opacity: 0.6; margin-left: auto;">${d.status}</span>
+            <span class="icon" style="font-size: 0.9em; font-weight: bold;">${statusIcon}</span> 
+            <span style="flex: 1;">${d.name}</span>
+            <span style="font-size: 0.7em; opacity: 0.7; display: flex; align-items: center; gap: 0.25rem; margin-left: 0.5rem; white-space: nowrap;">${statusLabel}</span>
         `;
+        div.title = statusDisplay;
         div.onclick = () => selectDevice(d);
         deviceListEl.appendChild(div);
     });
