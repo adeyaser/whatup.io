@@ -123,6 +123,14 @@
                             onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(239, 68, 68, 0.3)'">🗑
                             Delete Device</button>
                     </div>
+                    
+                    <!-- Status Badge -->
+                    <div id="connection-status-badge" style="display: none; margin-bottom: var(--space-lg); padding: var(--space-lg); border-radius: var(--radius-lg); background: #f0fdf4; border: 2px solid #22c55e; text-align: center;">
+                        <div style="font-size: 2.5rem; margin-bottom: 0.5rem;" id="status-icon">🟢</div>
+                        <div style="font-weight: 600; color: #15803d; font-size: 1.1rem;" id="status-text">Connected</div>
+                        <div style="font-size: 0.85rem; color: #4ade80; margin-top: 0.25rem;" id="device-name-badge">Device Name</div>
+                    </div>
+                    
                     <div id="qr-container">
                         <div class="placeholder">Select a device to connect</div>
                         <img id="qr-image" src="" alt="Scan Me" style="display:none;">

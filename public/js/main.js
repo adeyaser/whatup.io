@@ -238,7 +238,7 @@ function selectDevice(device) {
     deleteDeviceBtn.style.display = 'inline-block';
 
     // Update UI for this device status
-    updateStatusUI(device.status);
+    updateStatusUI(device.status, device);
 
     // Refresh list highlighting
     loadDevices();
@@ -253,18 +253,40 @@ function selectDevice(device) {
     qrContainer.querySelector('.placeholder').textContent = device.status === 'connected' ? 'Device Connected' : 'Waiting for Updates...';
 }
 
-function updateStatusUI(status) {
+function updateStatusUI(status, device = null) {
     waStatusBadge.textContent = `Status: ${status}`;
-    if (status === 'connected') {
-        waStatusBadge.style.color = '#22c55e';
-    } else if (status === 'disconnected') {
-        waStatusBadge.style.color = '#ef4444';
-    } else if (status === 'scanning') {
-        waStatusBadge.style.color = '#eab308';
-    } else if (status === 'connecting') {
-        waStatusBadge.style.color = '#3b82f6';
-    } else {
-        waStatusBadge.style.color = 'black';
+    
+    // Status configuration
+    const statusConfig = {
+        'connected': { icon: '🟢', color: '#22c55e', bgColor: '#f0fdf4', borderColor: '#22c55e' },
+        'disconnected': { icon: '🔴', color: '#ef4444', bgColor: '#fef2f2', borderColor: '#ef4444' },
+        'scanning': { icon: '🔵', color: '#3b82f6', bgColor: '#eff6ff', borderColor: '#3b82f6' },
+        'connecting': { icon: '🟡', color: '#eab308', bgColor: '#fefce8', borderColor: '#eab308' }
+    };
+    
+    const config = statusConfig[status] || statusConfig['disconnected'];
+    waStatusBadge.style.color = config.color;
+    
+    // Update connection badge
+    const badge = document.getElementById('connection-status-badge');
+    const statusIcon = document.getElementById('status-icon');
+    const statusText = document.getElementById('status-text');
+    const deviceNameBadge = document.getElementById('device-name-badge');
+    
+    if (badge && status !== 'disconnected' && status !== 'connecting') {
+        statusIcon.textContent = config.icon;
+        statusText.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+        statusText.style.color = config.color;
+        
+        if (device) {
+            deviceNameBadge.textContent = device.name;
+        }
+        
+        badge.style.backgroundColor = config.bgColor;
+        badge.style.borderColor = config.borderColor;
+        badge.style.display = 'block';
+    } else if (badge) {
+        badge.style.display = 'none';
     }
 }
 
