@@ -661,6 +661,8 @@ async function loadMembers(groupId) {
          console.error('loadMembers error:', e);
          console.error('Error details:', { status: e.response?.status, data: e.response?.data });
          tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 2rem; color: #ef4444;">Error: ${e.message}</td></tr>`;
+     }
+ }
 
 function closeMembersModal() {
     const m = document.getElementById('members-modal');
