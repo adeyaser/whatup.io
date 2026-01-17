@@ -650,8 +650,9 @@ async function loadMembers(groupId) {
                          </td>
                      `;
                      tbody.appendChild(tr);
+                     console.log('Member row appended. tbody now has', tbody.children.length, 'children');
                  });
-                 console.log(`Successfully rendered ${res.data.data.length} members`);
+                 console.log(`Successfully rendered ${res.data.data.length} members. Final tbody HTML:`, tbody.innerHTML.substring(0, 200));
              }
          } else {
              console.error('Invalid response format:', res.data);

@@ -481,12 +481,23 @@ tbody tr:hover {
 /* Members Table Specific */
 #members-table-body {
     display: table-row-group;
+    width: 100%;
 }
 
 #members-table-body tr {
     display: table-row;
     background: white;
-    min-height: 50px;
+    min-height: auto;
+    visibility: visible;
+    opacity: 1;
+}
+
+#members-table-body tr td {
+    display: table-cell;
+    padding: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+    visibility: visible;
+    opacity: 1;
 }
 
 #members-table-body td {
