@@ -123,5 +123,5 @@ const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 server.listen(PORT, () => {
     console.log(`Server running on port ${PORT} (${NODE_ENV})`);
-    console.log(`App URL: ${process.env.APP_URL || 'http://localhost:' + PORT}`);
+    console.log(`App URL: ${process.env.APP_URL || 'https://whatup.galerilittlehomemontessori.my.id/' + PORT}`);
 });
