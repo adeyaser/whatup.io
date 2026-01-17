@@ -596,16 +596,22 @@ async function deleteGroup(id) {
 async function openMembersModal(id, name) {
     currentGroupId = id;
     document.getElementById('members-modal-title').textContent = `Members of ${name}`;
-    document.getElementById('members-modal').style.display = 'flex';
+    const m = document.getElementById('members-modal');
+    if (m) {
+        m.classList.add('open');
+        m.style.display = 'flex';
+    }
     loadMembers(id);
 }
 
 async function loadMembers(groupId) {
     const tbody = document.getElementById('members-table-body');
     if (!tbody) return;
+    console.log('loadMembers called for groupId:', groupId);
     tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 2rem; color: #94a3b8;">Loading members...</td></tr>';
     try {
         const res = await axios.get(`/api/groups/${groupId}/members`);
+        console.log('loadMembers response:', res?.data?.data?.length ?? 0, 'items');
         if (res.data.status) {
             tbody.innerHTML = '';
             if (res.data.data.length === 0) {
@@ -641,8 +647,18 @@ async function loadMembers(groupId) {
             }
         }
     } catch (e) {
+        console.error('loadMembers error:', e);
         tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 2rem; color: #ef4444;">Error loading members</td></tr>';
     }
+}
+
+function closeMembersModal() {
+    const m = document.getElementById('members-modal');
+    if (!m) return;
+    m.classList.remove('open');
+    setTimeout(() => {
+        m.style.display = 'none';
+    }, 200);
 }
 
 async function removeMember(id) {
