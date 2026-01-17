@@ -600,7 +600,25 @@ async function openMembersModal(id, name) {
     if (m) {
         m.classList.add('open');
         m.style.display = 'flex';
+        m.setAttribute('aria-hidden', 'false');
     }
+    console.log('Modal opened. Checking modal computed styles...');
+    setTimeout(() => {
+        const modal = document.getElementById('members-modal');
+        const card = modal?.querySelector('.card') || modal?.querySelector('[style*="flex-direction"]');
+        const tbody = document.getElementById('members-table-body');
+        console.log('Modal display:', window.getComputedStyle(modal)?.display);
+        console.log('Card styles:', card ? {
+            display: window.getComputedStyle(card).display,
+            maxHeight: window.getComputedStyle(card).maxHeight,
+            overflow: window.getComputedStyle(card).overflow
+        } : 'no card');
+        console.log('Tbody visibility:', {
+            display: window.getComputedStyle(tbody).display,
+            visibility: window.getComputedStyle(tbody).visibility,
+            opacity: window.getComputedStyle(tbody).opacity
+        });
+    }, 100);
     loadMembers(id);
 }
 
