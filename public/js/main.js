@@ -607,6 +607,9 @@ async function openMembersModal(id, name) {
         const modal = document.getElementById('members-modal');
         const card = modal?.querySelector('.card') || modal?.querySelector('[style*="flex-direction"]');
         const tbody = document.getElementById('members-table-body');
+        const tableContainer = tbody?.closest('div');
+        const table = tbody?.closest('table');
+        
         console.log('Modal display:', window.getComputedStyle(modal)?.display);
         console.log('Card styles:', card ? {
             display: window.getComputedStyle(card).display,
@@ -616,7 +619,18 @@ async function openMembersModal(id, name) {
         console.log('Tbody visibility:', {
             display: window.getComputedStyle(tbody).display,
             visibility: window.getComputedStyle(tbody).visibility,
-            opacity: window.getComputedStyle(tbody).opacity
+            opacity: window.getComputedStyle(tbody).opacity,
+            height: window.getComputedStyle(tbody).height
+        });
+        console.log('Table container (parent div):', {
+            display: window.getComputedStyle(tableContainer).display,
+            overflow: window.getComputedStyle(tableContainer).overflow,
+            height: window.getComputedStyle(tableContainer).height,
+            backgroundColor: window.getComputedStyle(tableContainer).backgroundColor
+        });
+        console.log('Table itself:', {
+            display: window.getComputedStyle(table).display,
+            borderCollapse: window.getComputedStyle(table).borderCollapse
         });
     }, 100);
     loadMembers(id);
@@ -645,21 +659,24 @@ async function loadMembers(groupId) {
                      const tr = document.createElement('tr');
                      tr.style.borderBottom = '1px solid #e2e8f0';
                      tr.style.transition = 'all 0.2s';
-                     tr.style.backgroundColor = 'white';
+                     tr.style.backgroundColor = '#fafafa';
+                     tr.style.height = 'auto';
+                     tr.style.display = 'table-row';
+                     tr.style.visibility = 'visible';
                      tr.onmouseover = function () {
-                         this.style.backgroundColor = '#f8fafc';
+                         this.style.backgroundColor = '#f0f4ff';
                      };
                      tr.onmouseout = function () {
-                         this.style.backgroundColor = 'white';
+                         this.style.backgroundColor = '#fafafa';
                      };
                      tr.innerHTML = `
-                         <td style="padding: 1rem; font-weight: 500; color: #1e293b;">
+                         <td style="padding: 1rem; font-weight: 500; color: #1e293b; display: table-cell; vertical-align: middle;">
                              <span style="display: inline-block; background: #eff6ff; color: #3b82f6; padding: 0.25rem 0.75rem; border-radius: 6px; font-size: 0.9rem;">
                                  ${m.number}
                              </span>
                          </td>
-                         <td style="padding: 1rem; color: #64748b;">${m.name || '<em style="color: #cbd5e1;">No name</em>'}</td>
-                         <td style="padding: 1rem; text-align: right;">
+                         <td style="padding: 1rem; color: #64748b; display: table-cell; vertical-align: middle;">${m.name || '<em style="color: #cbd5e1;">No name</em>'}</td>
+                         <td style="padding: 1rem; text-align: right; display: table-cell; vertical-align: middle;">
                              <button onclick="removeMember(${m.id})" 
                                  style="background: #fee2e2; color: #dc2626; border: none; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; font-size: 1.2rem; transition: all 0.2s; font-weight: bold;"
                                  onmouseover="this.style.background='#fecaca'; this.style.transform='scale(1.1)'"
@@ -668,9 +685,18 @@ async function loadMembers(groupId) {
                          </td>
                      `;
                      tbody.appendChild(tr);
-                     console.log('Member row appended. tbody now has', tbody.children.length, 'children');
+                     console.log('✅ Row appended. Checking row:', {
+                         display: tr.style.display,
+                         height: tr.style.height,
+                         children: tr.children.length,
+                         computedHeight: window.getComputedStyle(tr).height
+                     });
                  });
-                 console.log(`Successfully rendered ${res.data.data.length} members. Final tbody HTML:`, tbody.innerHTML.substring(0, 200));
+                 console.log(`✅ Successfully rendered ${res.data.data.length} members. Table state:`, {
+                     tbodyChildren: tbody.children.length,
+                     tbodyHeight: window.getComputedStyle(tbody).height,
+                     firstRowHeight: tbody.children[0] ? window.getComputedStyle(tbody.children[0]).height : 'N/A'
+                 });
              }
          } else {
              console.error('Invalid response format:', res.data);
