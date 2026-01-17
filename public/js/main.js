@@ -606,51 +606,61 @@ async function openMembersModal(id, name) {
 
 async function loadMembers(groupId) {
     const tbody = document.getElementById('members-table-body');
-    if (!tbody) return;
-    console.log('loadMembers called for groupId:', groupId);
-    tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 2rem; color: #94a3b8;">Loading members...</td></tr>';
-    try {
-        const res = await axios.get(`/api/groups/${groupId}/members`);
-        console.log('loadMembers response:', res?.data?.data?.length ?? 0, 'items');
-        if (res.data.status) {
-            tbody.innerHTML = '';
-            if (res.data.data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 2rem; color: #94a3b8;">No members yet. Add your first member above! 👆</td></tr>';
-            } else {
-                res.data.data.forEach(m => {
-                    const tr = document.createElement('tr');
-                    tr.style.borderBottom = '1px solid #e2e8f0';
-                    tr.style.transition = 'all 0.2s';
-                    tr.onmouseover = function () {
-                        this.style.backgroundColor = '#f8fafc';
-                    };
-                    tr.onmouseout = function () {
-                        this.style.backgroundColor = 'transparent';
-                    };
-                    tr.innerHTML = `
-                        <td style="padding: 1rem; font-weight: 500; color: #1e293b;">
-                            <span style="display: inline-block; background: #eff6ff; color: #3b82f6; padding: 0.25rem 0.75rem; border-radius: 6px; font-size: 0.9rem;">
-                                ${m.number}
-                            </span>
-                        </td>
-                        <td style="padding: 1rem; color: #64748b;">${m.name || '<em style="color: #cbd5e1;">No name</em>'}</td>
-                        <td style="padding: 1rem; text-align: right;">
-                            <button onclick="removeMember(${m.id})" 
-                                style="background: #fee2e2; color: #dc2626; border: none; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; font-size: 1.2rem; transition: all 0.2s; font-weight: bold;"
-                                onmouseover="this.style.background='#fecaca'; this.style.transform='scale(1.1)'"
-                                onmouseout="this.style.background='#fee2e2'; this.style.transform='scale(1)'"
-                                title="Remove member">×</button>
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-            }
-        }
-    } catch (e) {
-        console.error('loadMembers error:', e);
-        tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 2rem; color: #ef4444;">Error loading members</td></tr>';
-    }
-}
+     if (!tbody) {
+         console.error('members-table-body element not found');
+         return;
+     }
+     console.log('loadMembers called for groupId:', groupId);
+     tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 2rem; color: #94a3b8;">Loading members...</td></tr>';
+     try {
+         const res = await axios.get(`/api/groups/${groupId}/members`);
+         console.log('API Response full:', res?.data);
+         console.log('loadMembers response: status=' + res.data.status + ', count=' + (res.data.data?.length ?? 'undefined'));
+         
+         if (res.data.status && Array.isArray(res.data.data)) {
+             tbody.innerHTML = '';
+             if (res.data.data.length === 0) {
+                 tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 2rem; color: #94a3b8;">No members yet. Add your first member above! 👆</td></tr>';
+             } else {
+                 res.data.data.forEach((m, idx) => {
+                     console.log(`Rendering member ${idx + 1}: id=${m.id}, number=${m.number}, name=${m.name}`);
+                     const tr = document.createElement('tr');
+                     tr.style.borderBottom = '1px solid #e2e8f0';
+                     tr.style.transition = 'all 0.2s';
+                     tr.style.backgroundColor = 'white';
+                     tr.onmouseover = function () {
+                         this.style.backgroundColor = '#f8fafc';
+                     };
+                     tr.onmouseout = function () {
+                         this.style.backgroundColor = 'white';
+                     };
+                     tr.innerHTML = `
+                         <td style="padding: 1rem; font-weight: 500; color: #1e293b;">
+                             <span style="display: inline-block; background: #eff6ff; color: #3b82f6; padding: 0.25rem 0.75rem; border-radius: 6px; font-size: 0.9rem;">
+                                 ${m.number}
+                             </span>
+                         </td>
+                         <td style="padding: 1rem; color: #64748b;">${m.name || '<em style="color: #cbd5e1;">No name</em>'}</td>
+                         <td style="padding: 1rem; text-align: right;">
+                             <button onclick="removeMember(${m.id})" 
+                                 style="background: #fee2e2; color: #dc2626; border: none; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; font-size: 1.2rem; transition: all 0.2s; font-weight: bold;"
+                                 onmouseover="this.style.background='#fecaca'; this.style.transform='scale(1.1)'"
+                                 onmouseout="this.style.background='#fee2e2'; this.style.transform='scale(1)'"
+                                 title="Remove member">×</button>
+                         </td>
+                     `;
+                     tbody.appendChild(tr);
+                 });
+                 console.log(`Successfully rendered ${res.data.data.length} members`);
+             }
+         } else {
+             console.error('Invalid response format:', res.data);
+             tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 2rem; color: #ef4444;">Invalid response format</td></tr>';
+         }
+     } catch (e) {
+         console.error('loadMembers error:', e);
+         console.error('Error details:', { status: e.response?.status, data: e.response?.data });
+         tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 2rem; color: #ef4444;">Error: ${e.message}</td></tr>`;
 
 function closeMembersModal() {
     const m = document.getElementById('members-modal');

@@ -478,6 +478,23 @@ tbody tr:hover {
     background: var(--gray-50);
 }
 
+/* Members Table Specific */
+#members-table-body {
+    display: table-row-group;
+}
+
+#members-table-body tr {
+    display: table-row;
+    background: white;
+    min-height: 50px;
+}
+
+#members-table-body td {
+    display: table-cell;
+    padding: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
 /* ========================================
    MODALS
    ======================================== */
