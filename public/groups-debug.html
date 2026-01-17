@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Groups Debug - Test Members Rendering</title>
+    <style>
+        body { font-family: sans-serif; max-width: 1200px; margin: 20px; }
+        .section { border: 1px solid #ccc; padding: 15px; margin: 15px 0; border-radius: 8px; }
+        .section h2 { margin-top: 0; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 5px; overflow-x: auto; }
+        button { padding: 10px 15px; margin: 5px 0; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #5568d3; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px; text-align: left; border: 1px solid #ddd; }
+        th { background: #f5f5f5; }
+        .success { color: green; }
+        .error { color: red; }
+        .warning { color: orange; }
+    </style>
+</head>
+<body>
+    <h1>Groups Members Rendering Diagnostic</h1>
+
+    <div class="section">
+        <h2>1. Authentication Status</h2>
+        <pre id="auth-status">Checking...</pre>
+    </div>
+
+    <div class="section">
+        <h2>2. API Test</h2>
+        <label>
+            Group ID:
+            <input type="number" id="groupId" value="3">
+        </label>
+        <button onclick="testMembersAPI()">Test API Endpoint</button>
+        <pre id="api-result">Ready to test...</pre>
+    </div>
+
+    <div class="section">
+        <h2>3. Mock Members Modal</h2>
+        <button onclick="openMockModal()">Open Modal</button>
+        <div id="mock-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000;">
+            <div style="background: white; width: 650px; max-height: 85vh; display: flex; flex-direction: column; border-radius: 12px;">
+                <header style="padding: 1.5rem; border-bottom: 2px solid #e2e8f0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <h3 style="margin: 0;">Mock Members Modal</h3>
+                    <p style="margin: 0.5rem 0 0 0; font-size: 0.85rem;">Testing members list rendering</p>
+                </header>
+                <div style="overflow-y: auto; flex: 1; padding: 1rem;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Phone Number</th>
+                                <th>Name</th>
+                                <th style="text-align: right;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="members-table-body">
+                            <tr><td colspan="3" style="text-align: center; padding: 2rem;">Loading members...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <button onclick="closeMockModal()" style="width: 100%; padding: 1rem; margin-top: 1rem;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>4. Diagnostic Logs</h2>
+        <pre id="diagnostic-logs">Logs will appear here...</pre>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        const logs = [];
+        
+        function log(msg) {
+            const timestamp = new Date().toLocaleTimeString();
+            logs.push(`[${timestamp}] ${msg}`);
+            document.getElementById('diagnostic-logs').textContent = logs.join('\n');
+            console.log(msg);
+        }
+
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('user');
+            
+            const status = `
+Token: ${token ? '✅ Present (' + token.substring(0, 20) + '...)' : '❌ Not found'}
+User: ${user ? '✅ ' + JSON.parse(user).username : '❌ Not found'}
+
+localStorage keys: ${Object.keys(localStorage).join(', ')}
+            `;
+            
+            document.getElementById('auth-status').textContent = status;
+            log('Auth check: Token=' + (token ? 'yes' : 'no'));
+            return !!token;
+        }
+
+        async function testMembersAPI() {
+            const groupId = document.getElementById('groupId').value;
+            const resultEl = document.getElementById('api-result');
+            
+            log('Testing API for group ' + groupId);
+            resultEl.textContent = 'Loading...';
+
+            try {
+                const res = await axios.get(`/api/groups/${groupId}/members`);
+                log('API Response: status=' + res.status + ', data count=' + (res.data.data?.length ?? 'N/A'));
+                resultEl.textContent = JSON.stringify(res.data, null, 2);
+            } catch (e) {
+                log('❌ API Error: ' + e.message);
+                resultEl.innerHTML = '<span class="error">Error: ' + (e.response?.data?.message || e.message) + '</span>';
+            }
+        }
+
+        function openMockModal() {
+            log('Opening mock modal');
+            document.getElementById('mock-modal').style.display = 'flex';
+            loadMembersIntoTable(3); // Load group 3
+        }
+
+        function closeMockModal() {
+            log('Closing mock modal');
+            document.getElementById('mock-modal').style.display = 'none';
+        }
+
+        async function loadMembersIntoTable(groupId) {
+            const tbody = document.getElementById('members-table-body');
+            
+            log('loadMembersIntoTable called for groupId=' + groupId);
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 2rem;">Loading...</td></tr>';
+
+            try {
+                const res = await axios.get(`/api/groups/${groupId}/members`);
+                log('API returned ' + res.data.data.length + ' members');
+                
+                if (res.data.status && Array.isArray(res.data.data)) {
+                    tbody.innerHTML = '';
+                    
+                    if (res.data.data.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 2rem;">No members</td></tr>';
+                        log('Empty members list');
+                    } else {
+                        res.data.data.forEach((m, idx) => {
+                            log('Rendering member ' + (idx + 1) + ': ' + m.number);
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `
+                                <td>${m.number}</td>
+                                <td>${m.name || '-'}</td>
+                                <td style="text-align: right;"><button onclick="alert('Remove: ' + ${m.id})">Remove</button></td>
+                            `;
+                            tbody.appendChild(tr);
+                        });
+                        log('✅ Successfully rendered ' + res.data.data.length + ' members');
+                    }
+                }
+            } catch (e) {
+                log('❌ Error: ' + e.message);
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: red; padding: 2rem;">Error: ' + e.message + '</td></tr>';
+            }
+        }
+
+        // Initialize
+        window.onload = function() {
+            log('Page loaded');
+            checkAuth();
+        };
+    </script>
+</body>
+</html>
