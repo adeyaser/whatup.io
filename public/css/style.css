@@ -497,6 +497,98 @@ tbody tr:hover {
     animation: fadeInOverlay var(--transition-base);
 }
 
+.modal-overlay.open {
+    display: flex;
+}
+
+.modal-card {
+    width: 420px;
+    max-width: calc(100% - 40px);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+    box-shadow: 0 20px 40px rgba(2,6,23,0.12);
+    border: 1px solid rgba(16,24,40,0.04);
+    background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+}
+
+/* Modal animation */
+.modal-overlay.open {
+    display: flex;
+}
+
+.modal-card {
+    transform: translateY(-12px) scale(0.98);
+    opacity: 0;
+    transition: transform 220ms var(--transition-base), opacity 220ms var(--transition-base);
+}
+
+.modal-overlay.open .modal-card {
+    .modal-card {
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 12px 40px rgba(0,0,0,0.18);
+        width: 480px;
+        max-width: calc(100% - 32px);
+        padding: 0;
+        transform: translateY(-8px) scale(0.98);
+        transition: transform 200ms cubic-bezier(.2,.9,.3,1), opacity 200ms ease;
+        opacity: 0;
+    }
+
+    .modal-overlay.open .modal-card {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+
+    transform: translateY(0) scale(1);
+    opacity: 1;
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.125rem;
+    color: var(--gray-800);
+}
+
+.modal-close {
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    color: var(--gray-500);
+}
+
+.modal-body {
+    padding-top: 0.25rem;
+    padding-bottom: 0.5rem;
+}
+
+.modal-footer {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    margin-top: 0.5rem;
+}
+
+.btn-secondary {
+    padding: 0.5rem 0.9rem;
+    border-radius: 8px;
+}
+
+/* Improve input appearance inside modal */
+.modal-card input[type="text"] {
+    padding: 0.7rem;
+    border-radius: 8px;
+}
+
 @keyframes fadeInOverlay {
     from {
         opacity: 0;

@@ -426,11 +426,40 @@ const confirmBtn = document.getElementById('confirm-add-btn');
 
 // Close modals on outside click
 window.addEventListener('click', (e) => {
-    if (e.target === modal) modal.style.display = 'none';
+    if (e.target === modal) {
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+    }
 });
 
-addBtn.onclick = () => modal.style.display = 'flex';
-cancelBtn.onclick = () => modal.style.display = 'none';
+addBtn.onclick = () => {
+    // show modal with animation class
+    modal.classList.add('open');
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+    // clear inputs and focus
+    document.getElementById('new-device-id').value = '';
+    document.getElementById('new-device-name').value = '';
+    setTimeout(() => document.getElementById('new-device-id').focus(), 50);
+};
+
+cancelBtn.onclick = () => {
+    modal.classList.remove('open');
+    setTimeout(() => {
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+    }, 220);
+};
+
+// Close button (top-right)
+const modalCloseBtn = document.getElementById('modal-close-btn');
+if (modalCloseBtn) modalCloseBtn.onclick = () => {
+    modal.classList.remove('open');
+    setTimeout(() => {
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+    }, 220);
+};
 
 confirmBtn.onclick = async () => {
     const id = document.getElementById('new-device-id').value;
