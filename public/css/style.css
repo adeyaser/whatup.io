@@ -450,9 +450,7 @@ table {
 }
 
 thead {
-    background: var(--gray-100);
-    position: sticky;
-    top: 0;
+    /* Removed sticky from here */
 }
 
 th {
@@ -464,6 +462,7 @@ th {
     text-transform: uppercase;
     letter-spacing: 0.05em;
 }
+
 
 td {
     padding: var(--space-md);
@@ -534,8 +533,8 @@ tbody tr:hover {
     max-width: calc(100% - 40px);
     border-radius: 12px;
     padding: 1rem 1.25rem;
-    box-shadow: 0 20px 40px rgba(2,6,23,0.12);
-    border: 1px solid rgba(16,24,40,0.04);
+    box-shadow: 0 20px 40px rgba(2, 6, 23, 0.12);
+    border: 1px solid rgba(16, 24, 40, 0.04);
     background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
 }
 
@@ -554,12 +553,12 @@ tbody tr:hover {
     .modal-card {
         background: #fff;
         border-radius: 8px;
-        box-shadow: 0 12px 40px rgba(0,0,0,0.18);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
         width: 480px;
         max-width: calc(100% - 32px);
         padding: 0;
         transform: translateY(-8px) scale(0.98);
-        transition: transform 200ms cubic-bezier(.2,.9,.3,1), opacity 200ms ease;
+        transition: transform 200ms cubic-bezier(.2, .9, .3, 1), opacity 200ms ease;
         opacity: 0;
     }
 

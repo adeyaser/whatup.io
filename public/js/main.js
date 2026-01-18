@@ -198,12 +198,12 @@ function renderDeviceList(devices) {
         const div = document.createElement('div');
         div.className = `menu-item device-item ${currentDeviceId === d.device_id ? 'active' : ''}`;
         div.style.cursor = 'pointer';
-        
+
         // Status icon dari response
         const statusIcon = d.statusIcon || (d.online ? '🟢' : '🔴');
         const statusLabel = d.statusLabel || d.status;
         const statusDisplay = `${statusIcon} ${statusLabel}`;
-        
+
         div.innerHTML = `
             <span class="icon" style="font-size: 0.9em; font-weight: bold;">${statusIcon}</span> 
             <span style="flex: 1;">${d.name}</span>
@@ -255,7 +255,7 @@ function selectDevice(device) {
 
 function updateStatusUI(status, device = null) {
     waStatusBadge.textContent = `Status: ${status}`;
-    
+
     // Status configuration
     const statusConfig = {
         'connected': { icon: '🟢', color: '#22c55e', bgColor: '#f0fdf4', borderColor: '#22c55e' },
@@ -263,25 +263,25 @@ function updateStatusUI(status, device = null) {
         'scanning': { icon: '🔵', color: '#3b82f6', bgColor: '#eff6ff', borderColor: '#3b82f6' },
         'connecting': { icon: '🟡', color: '#eab308', bgColor: '#fefce8', borderColor: '#eab308' }
     };
-    
+
     const config = statusConfig[status] || statusConfig['disconnected'];
     waStatusBadge.style.color = config.color;
-    
+
     // Update connection badge
     const badge = document.getElementById('connection-status-badge');
     const statusIcon = document.getElementById('status-icon');
     const statusText = document.getElementById('status-text');
     const deviceNameBadge = document.getElementById('device-name-badge');
-    
+
     if (badge && status !== 'disconnected' && status !== 'connecting') {
         statusIcon.textContent = config.icon;
         statusText.textContent = status.charAt(0).toUpperCase() + status.slice(1);
         statusText.style.color = config.color;
-        
+
         if (device) {
             deviceNameBadge.textContent = device.name;
         }
-        
+
         badge.style.backgroundColor = config.bgColor;
         badge.style.borderColor = config.borderColor;
         badge.style.display = 'block';
@@ -516,8 +516,10 @@ function renderGroupsTable(groups) {
             <td style="padding: 0.75rem;">${g.name}</td>
             <td style="padding: 0.75rem;">${g.member_count} members</td>
             <td style="padding: 0.75rem; text-align: right;">
-                <button class="btn-secondary" onclick="openMembersModal(${g.id}, '${g.name}')" style="font-size: 0.8rem; padding: 0.25rem 0.5rem;">Manage</button>
-                <button onclick="deleteGroup(${g.id})" style="color: red; background: none; border: none; cursor: pointer; margin-left: 0.5rem;">🗑</button>
+                <button class="btn-secondary" onclick="openMembersModal(${g.id}, '${g.name}')" style="font-size: 0.8rem; padding: 0.25rem 0.75rem; border-radius: 6px; border: 1px solid #e2e8f0; background: white; color: #475569; cursor: pointer; transition: all 0.2s;">Manage</button>
+                <button onclick="deleteGroup(${g.id})" style="color: #ef4444; background: #fef2f2; border: none; cursor: pointer; margin-left: 0.5rem; width: 28px; height: 28px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s;" title="Delete group">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 7a1 1 0 0 0-1 1v11.191A1.92 1.92 0 0 1 15.99 21H8.01A1.92 1.92 0 0 1 6 19.191V8a1 1 0 0 0-2 0v11.191A3.918 3.918 0 0 0 8.01 23h7.98A3.918 3.918 0 0 0 20 19.191V8a1 1 0 0 0-1-1Zm1-3h-4V2a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v2H4a1 1 0 0 0 0 2h16a1 1 0 0 0 0-2ZM10 4V3h4v1Z"/></svg>
+                </button>
             </td>
         `;
         tbody.appendChild(tr);
@@ -582,7 +584,7 @@ document.addEventListener('click', async (e) => {
 
 
 // Helper Functions
-async function deleteGroup(id) {
+window.deleteGroup = async function (id) {
     if (!confirm('Start deleting group?')) return;
     try {
         await axios.post('/api/groups/delete', { id });
@@ -590,143 +592,105 @@ async function deleteGroup(id) {
     } catch (e) {
         alert('Error deleting group: ' + e.message);
     }
-}
+};
 
 // Manage Members
-async function openMembersModal(id, name) {
+window.openMembersModal = async function (id, name) {
     currentGroupId = id;
-    document.getElementById('members-modal-title').textContent = `Members of ${name}`;
+    const titleEl = document.getElementById('members-modal-title');
+    if (titleEl) titleEl.textContent = `Members of ${name}`;
+
     const m = document.getElementById('members-modal');
     if (m) {
         m.classList.add('open');
         m.style.display = 'flex';
         m.setAttribute('aria-hidden', 'false');
     }
-    console.log('Modal opened. Checking modal computed styles...');
-    setTimeout(() => {
-        const modal = document.getElementById('members-modal');
-        const card = modal?.querySelector('.card') || modal?.querySelector('[style*="flex-direction"]');
-        const tbody = document.getElementById('members-table-body');
-        const tableContainer = tbody?.closest('div');
-        const table = tbody?.closest('table');
-        
-        console.log('Modal display:', window.getComputedStyle(modal)?.display);
-        console.log('Card styles:', card ? {
-            display: window.getComputedStyle(card).display,
-            maxHeight: window.getComputedStyle(card).maxHeight,
-            overflow: window.getComputedStyle(card).overflow
-        } : 'no card');
-        console.log('Tbody visibility:', {
-            display: window.getComputedStyle(tbody).display,
-            visibility: window.getComputedStyle(tbody).visibility,
-            opacity: window.getComputedStyle(tbody).opacity,
-            height: window.getComputedStyle(tbody).height
-        });
-        console.log('Table container (parent div):', {
-            display: window.getComputedStyle(tableContainer).display,
-            overflow: window.getComputedStyle(tableContainer).overflow,
-            height: window.getComputedStyle(tableContainer).height,
-            backgroundColor: window.getComputedStyle(tableContainer).backgroundColor
-        });
-        console.log('Table itself:', {
-            display: window.getComputedStyle(table).display,
-            borderCollapse: window.getComputedStyle(table).borderCollapse
-        });
-    }, 100);
     loadMembers(id);
-}
+};
 
-async function loadMembers(groupId) {
+window.loadMembers = async function (groupId) {
     const tbody = document.getElementById('members-table-body');
-     if (!tbody) {
-         console.error('members-table-body element not found');
-         return;
-     }
-     console.log('loadMembers called for groupId:', groupId);
-     tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 2rem; color: #94a3b8;">Loading members...</td></tr>';
-     try {
-         const res = await axios.get(`/api/groups/${groupId}/members`);
-         console.log('API Response full:', res?.data);
-         console.log('loadMembers response: status=' + res.data.status + ', count=' + (res.data.data?.length ?? 'undefined'));
-         
-         if (res.data.status && Array.isArray(res.data.data)) {
-             tbody.innerHTML = '';
-             if (res.data.data.length === 0) {
-                 tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 2rem; color: #94a3b8;">No members yet. Add your first member above! 👆</td></tr>';
-             } else {
-                 res.data.data.forEach((m, idx) => {
-                     console.log(`Rendering member ${idx + 1}: id=${m.id}, number=${m.number}, name=${m.name}`);
-                     const tr = document.createElement('tr');
-                     tr.style.borderBottom = '1px solid #e2e8f0';
-                     tr.style.transition = 'all 0.2s';
-                     tr.style.backgroundColor = '#fafafa';
-                     tr.style.height = 'auto';
-                     tr.style.display = 'table-row';
-                     tr.style.visibility = 'visible';
-                     tr.onmouseover = function () {
-                         this.style.backgroundColor = '#f0f4ff';
-                     };
-                     tr.onmouseout = function () {
-                         this.style.backgroundColor = '#fafafa';
-                     };
-                     tr.innerHTML = `
-                         <td style="padding: 1rem; font-weight: 500; color: #1e293b; display: table-cell; vertical-align: middle;">
-                             <span style="display: inline-block; background: #eff6ff; color: #3b82f6; padding: 0.25rem 0.75rem; border-radius: 6px; font-size: 0.9rem;">
-                                 ${m.number}
-                             </span>
-                         </td>
-                         <td style="padding: 1rem; color: #64748b; display: table-cell; vertical-align: middle;">${m.name || '<em style="color: #cbd5e1;">No name</em>'}</td>
-                         <td style="padding: 1rem; text-align: right; display: table-cell; vertical-align: middle;">
-                             <button onclick="removeMember(${m.id})" 
-                                 style="background: #fee2e2; color: #dc2626; border: none; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; font-size: 1.2rem; transition: all 0.2s; font-weight: bold;"
-                                 onmouseover="this.style.background='#fecaca'; this.style.transform='scale(1.1)'"
-                                 onmouseout="this.style.background='#fee2e2'; this.style.transform='scale(1)'"
-                                 title="Remove member">×</button>
-                         </td>
-                     `;
-                     tbody.appendChild(tr);
-                     console.log('✅ Row appended. Checking row:', {
-                         display: tr.style.display,
-                         height: tr.style.height,
-                         children: tr.children.length,
-                         computedHeight: window.getComputedStyle(tr).height
-                     });
-                 });
-                 console.log(`✅ Successfully rendered ${res.data.data.length} members. Table state:`, {
-                     tbodyChildren: tbody.children.length,
-                     tbodyHeight: window.getComputedStyle(tbody).height,
-                     firstRowHeight: tbody.children[0] ? window.getComputedStyle(tbody.children[0]).height : 'N/A'
-                 });
-             }
-         } else {
-             console.error('Invalid response format:', res.data);
-             tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 2rem; color: #ef4444;">Invalid response format</td></tr>';
-         }
-     } catch (e) {
-         console.error('loadMembers error:', e);
-         console.error('Error details:', { status: e.response?.status, data: e.response?.data });
-         tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 2rem; color: #ef4444;">Error: ${e.message}</td></tr>`;
-     }
- }
+    if (!tbody) return;
 
-function closeMembersModal() {
+    // Destroy existing DataTable if it exists
+    if ($.fn.DataTable.isDataTable('#members-table')) {
+        $('#members-table').DataTable().destroy();
+    }
+
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 2rem; color: #94a3b8;">Loading members...</td></tr>';
+
+    try {
+        const res = await axios.get(`/api/groups/${groupId}/members`);
+
+        if (res.data.status && Array.isArray(res.data.data)) {
+            tbody.innerHTML = '';
+            if (res.data.data.length === 0) {
+                // tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 2rem; color: #94a3b8;">No members yet. Add your first member above! 👆</td></tr>';
+                // DataTable handles empty state, just leave empty
+            } else {
+                res.data.data.forEach(m => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="padding: 1rem; font-weight: 500; color: #1e293b;">
+                            <span style="background: #eff6ff; color: #3b82f6; padding: 0.25rem 0.75rem; border-radius: 6px; font-size: 0.9rem;">
+                                ${m.number}
+                            </span>
+                        </td>
+                        <td style="padding: 1rem; color: #64748b;">${m.name || '<em style="color: #cbd5e1;">No name</em>'}</td>
+                        <td style="padding: 1rem; text-align: right;">
+                            <button onclick="removeMember(${m.id})" 
+                                style="background: #fee2e2; color: #dc2626; border: none; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; font-size: 1.2rem; transition: all 0.2s;"
+                                title="Remove member">×</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            // Initialize DataTable
+            $('#members-table').DataTable({
+                responsive: true,
+                autoWidth: false,
+                paging: true,
+                pageLength: 5,
+                lengthMenu: [5, 10, 25, 50],
+                language: {
+                    emptyTable: "No members yet. Add your first member above! 👆"
+                },
+                columnDefs: [
+                    { orderable: false, targets: 2 } // Disable sorting on Action column
+                ]
+            });
+
+        } else {
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 2rem; color: #ef4444;">Invalid response format</td></tr>';
+        }
+    } catch (e) {
+        console.error('loadMembers error:', e);
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 2rem; color: #ef4444;">Error: ${e.message}</td></tr>`;
+    }
+};
+
+window.closeMembersModal = function () {
     const m = document.getElementById('members-modal');
     if (!m) return;
     m.classList.remove('open');
     setTimeout(() => {
         m.style.display = 'none';
     }, 200);
-}
+};
 
-async function removeMember(id) {
+window.removeMember = async function (id) {
+    if (!confirm('Remove this member?')) return;
     try {
         await axios.post('/api/groups/manage/remove-member', { id });
         loadMembers(currentGroupId);
         loadGroups(); // Update count
     } catch (e) {
-        alert('Error removing member');
+        alert('Error removing member: ' + (e.response?.data?.message || e.message));
     }
-}
+};
 
 // --- Send Message Features ---
 async function populateGroupSelect(selectElement) {
