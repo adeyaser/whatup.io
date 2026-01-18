@@ -291,6 +291,7 @@ function updateStatusUI(status, device = null) {
 }
 
 let activeDeviceListeners = {};
+let deviceStatusCache = {}; // Track last known status per device
 
 function setupDeviceListeners(deviceId) {
     // Clean up old listeners if needed (Socket.io multiplexing usually handles this, but custom logic helps)
@@ -306,11 +307,24 @@ function setupDeviceListeners(deviceId) {
 }
 
 socket.on('device_status', (data) => {
+    // Check if status actually changed for this device
+    const lastStatus = deviceStatusCache[data.deviceId];
+    const statusChanged = lastStatus !== data.status;
+
+    // Update cache
+    deviceStatusCache[data.deviceId] = data.status;
+
     // Reload list to update status icons
     loadDevices();
+
     if (currentDeviceId === data.deviceId) {
         updateStatusUI(data.status);
-        showToast('Device Status', `Device is now ${data.status}`, data.status === 'connected' ? 'success' : 'warning');
+
+        // Only show toast if status actually changed
+        if (statusChanged) {
+            showToast('Device Status', `Device is now ${data.status}`, data.status === 'connected' ? 'success' : 'warning');
+        }
+
         if (data.status === 'connected') {
             qrContainer.innerHTML = '<div style="color: green; font-size: 3rem;">✔</div><p>Device Connected</p>';
         } else if (data.status === 'disconnected') {
