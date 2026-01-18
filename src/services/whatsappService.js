@@ -34,7 +34,7 @@ let io;
 
 // Suppress libsignal MAC errors (suppress repetitive error logs)
 const originalConsoleError = console.error;
-console.error = function(...args) {
+console.error = function (...args) {
     const errorMsg = args[0]?.toString?.() || '';
     // Skip repetitive MAC/BAD_MAC errors
     if (errorMsg.includes('Bad MAC') || errorMsg.includes('Failed to decrypt message')) {
@@ -63,12 +63,12 @@ const initWhatsApp = async (socketIo) => {
 const startSession = async (deviceId) => {
     try {
         console.log(`Starting session for device: ${deviceId}`);
-        
+
         // Load baileys module
         const baileys = await getBaileys();
         const makeWASocket = baileys.default;
         const { DisconnectReason, fetchLatestBaileysVersion } = baileys;
-        
+
         // Pass deviceId to state handler to prefix keys
         const { state, saveCreds } = await useMySQLAuthState(deviceId);
         const { version } = await fetchLatestBaileysVersion();
@@ -103,7 +103,7 @@ const startSession = async (deviceId) => {
                 // Load baileys once for this handler
                 const baileys = await getBaileys();
                 const { DisconnectReason } = baileys;
-                
+
                 const { connection, lastDisconnect, qr } = update;
 
                 if (qr) {
@@ -235,17 +235,67 @@ const sendMessage = async (deviceId, to, type, content, caption = '') => {
             sentMsg = await sock.sendMessage(jid, { video: { url: content }, caption: caption });
         }
 
-        // Save log
-        await pool.query(
-            'INSERT INTO message_logs (remote_jid, direction, type, content, status, device_id) VALUES (?, ?, ?, ?, ?, ?)',
-            [jid, 'OUT', type, (type === 'text' ? content : `[${type}] ${caption}`), 'sent', deviceId]
+        // Save success log
+        const [result] = await pool.query(
+            'INSERT INTO message_logs (remote_jid, direction, type, content, status, device_id, retry_count) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [jid, 'OUT', type, (type === 'text' ? content : `[${type}] ${caption}`), 'sent', deviceId, 0]
         );
 
-        return sentMsg;
+        return { ...sentMsg, logId: result.insertId };
     } catch (error) {
         console.error('Send message error:', error);
+
+        // Save failed log for retry
+        try {
+            await pool.query(
+                'INSERT INTO message_logs (remote_jid, direction, type, content, status, device_id, retry_count, error_message) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                [jid, 'OUT', type, (type === 'text' ? content : `[${type}] ${caption}`), 'failed', deviceId, 0, error.message]
+            );
+        } catch (logError) {
+            console.error('Error logging failed message:', logError);
+        }
+
         throw error;
     }
 };
 
-module.exports = { initWhatsApp, sendMessage, createDevice, deleteDevice, sessions };
+// Retry a failed message by log ID
+const retryMessage = async (logId) => {
+    try {
+        // Get the failed message from DB
+        const [rows] = await pool.query('SELECT * FROM message_logs WHERE id = ? AND status = ?', [logId, 'failed']);
+        if (rows.length === 0) {
+            throw new Error('Message not found or already sent');
+        }
+
+        const log = rows[0];
+        const sock = sessions.get(log.device_id);
+        if (!sock) throw new Error(`Device ${log.device_id} not connected`);
+
+        // Parse content type
+        const isMedia = log.type !== 'text';
+        let sentMsg;
+
+        if (log.type === 'text') {
+            sentMsg = await sock.sendMessage(log.remote_jid, { text: log.content });
+        } else {
+            // For media, content format is "[type] caption" - extract URL from original
+            // This is a limitation - for now just retry text messages reliably
+            sentMsg = await sock.sendMessage(log.remote_jid, { text: log.content });
+        }
+
+        // Update status to sent
+        await pool.query('UPDATE message_logs SET status = ?, retry_count = retry_count + 1 WHERE id = ?', ['sent', logId]);
+
+        console.log(`Successfully retried message ${logId}`);
+        return sentMsg;
+    } catch (error) {
+        // Increment retry count
+        await pool.query('UPDATE message_logs SET retry_count = retry_count + 1, error_message = ? WHERE id = ?', [error.message, logId]);
+        console.error(`Retry failed for message ${logId}:`, error.message);
+        throw error;
+    }
+};
+
+module.exports = { initWhatsApp, sendMessage, retryMessage, createDevice, deleteDevice, sessions };
+

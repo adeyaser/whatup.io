@@ -6,6 +6,7 @@ const { Server } = require("socket.io");
 const cors = require('cors');
 const path = require('path');
 const { initWhatsApp, createDevice, deleteDevice, sessions } = require('./services/whatsappService');
+const { startScheduler, getSchedulerStatus } = require('./services/messageScheduler');
 const apiRoutes = require('./routes/api');
 const authRoutes = require('./routes/auth');
 const groupRoutes = require('./routes/groups');
@@ -38,8 +39,8 @@ app.use(express.static(path.join(__dirname, '../public')));
 
 // Health check endpoint (untuk monitoring & Docker health check)
 app.get('/health', (req, res) => {
-    res.status(200).json({ 
-        status: 'ok', 
+    res.status(200).json({
+        status: 'ok',
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
         environment: process.env.NODE_ENV || 'development'
@@ -90,7 +91,7 @@ app.get('/api/devices', authenticateToken, async (req, res) => {
     const pool = require('./config/database');
     try {
         const [rows] = await pool.query('SELECT device_id, name, status, created_at FROM devices');
-        
+
         // Add online status dan icon indicator
         const devices = rows.map(d => {
             const isOnline = sessions.has(d.device_id);
@@ -100,9 +101,9 @@ app.get('/api/devices', authenticateToken, async (req, res) => {
                 'scanning': { icon: '🔵', label: 'Scanning QR', color: 'info' },
                 'disconnected': { icon: '🔴', label: 'Disconnected', color: 'danger' }
             };
-            
+
             const currentStatus = statusMap[d.status] || statusMap['disconnected'];
-            
+
             return {
                 ...d,
                 online: isOnline,
@@ -112,7 +113,7 @@ app.get('/api/devices', authenticateToken, async (req, res) => {
                 displayStatus: `${currentStatus.icon} ${currentStatus.label}`
             };
         });
-        
+
         res.json({ status: true, data: devices });
     } catch (e) {
         res.status(500).json({ status: false, message: 'Error fetching devices' });
@@ -136,7 +137,10 @@ io.on('connection', (socket) => {
 });
 
 // Initialize WhatsApp (Loads all devices)
-initWhatsApp(io).catch(err => console.error('Failed to initialize WhatsApp:', err));
+initWhatsApp(io).then(() => {
+    // Start message retry scheduler after WhatsApp is initialized
+    startScheduler();
+}).catch(err => console.error('Failed to initialize WhatsApp:', err));
 
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';
