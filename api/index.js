@@ -100,7 +100,8 @@ app.get('/api/devices', authenticateToken, async (req, res) => {
         const [rows] = await pool.query('SELECT device_id, name, status, created_at FROM devices');
         const devices = rows.map(d => ({
             ...d,
-            online: sessions.has(d.device_id)
+            // On Vercel (serverless), local sessions don't exist. We trust the DB status updated by the main server.
+            online: d.status === 'connected' || sessions.has(d.device_id)
         }));
 
         res.json({ status: true, data: devices });
@@ -127,36 +128,19 @@ app.get('/health', (req, res) => {
     res.json({ status: true, message: 'Server is running' });
 });
 
-// Diagnostic endpoint for Vercel
-app.get('/api/debug-status', (req, res) => {
-    res.json({
-        status: true,
-        deployment_tag: 'V3-GLOBAL-ENTRY',
-        debug_env_keys: Object.keys(process.env).filter(key => key.startsWith('DB_')),
-        node_env: process.env.NODE_ENV,
-        timestamp: new Date().toISOString()
-    });
-});
-
 // Error handling middleware (must be last)
 app.use((err, req, res, next) => {
     console.error('Unhandled error:', err);
     res.status(500).json({
         status: false,
-        message: 'DETEKSI-GLOBAL-BARU',
-        error: err.message,
-        deployment_tag: 'V3-GLOBAL-ENTRY',
-        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? err.message : undefined
     });
 });
 
 // 404 handler
 app.use((req, res) => {
-    res.status(404).json({
-        status: false,
-        message: 'Route not found',
-        deployment_tag: 'V3-GLOBAL-ENTRY'
-    });
+    res.status(404).json({ status: false, message: 'Route not found' });
 });
 
 // Export the Express app for Vercel

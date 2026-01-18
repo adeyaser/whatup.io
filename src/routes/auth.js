@@ -34,11 +34,8 @@ router.post('/login', async (req, res) => {
         console.error('Login error:', error);
         res.status(500).json({
             status: false,
-            message: 'DETEKSI-VERSI-BARU',
-            error: error.message,
-            deployment_tag: 'V3-FINAL-DIAGNOSTIC',
-            debug_env_keys: Object.keys(process.env).filter(key => key.startsWith('DB_')),
-            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            message: 'Server error',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
 });

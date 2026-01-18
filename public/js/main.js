@@ -168,15 +168,17 @@ const logoutBtn = document.getElementById('logout-btn');
 
 
 // Socket Global Events
-socket.on('connect', () => {
-    socketStatusDot.classList.add('connected');
-    socketStatusText.textContent = 'Socket: Connected';
-});
+if (socket) {
+    socket.on('connect', () => {
+        socketStatusDot.classList.add('connected');
+        socketStatusText.textContent = 'Socket: Connected';
+    });
 
-socket.on('disconnect', () => {
-    socketStatusDot.classList.remove('connected');
-    socketStatusText.textContent = 'Socket: Disconnected';
-});
+    socket.on('disconnect', () => {
+        socketStatusDot.classList.remove('connected');
+        socketStatusText.textContent = 'Socket: Disconnected';
+    });
+}
 
 // Device List Management
 async function loadDevices() {
@@ -318,6 +320,8 @@ function updateStatusUI(status, device = null) {
 let deviceStatusCache = {}; // Track last known status per device
 
 function setupDeviceListeners(deviceId) {
+    if (!socket) return;
+
     // Clean up old listeners
     socket.off(`qr_code:${deviceId}`);
 
@@ -336,58 +340,55 @@ function setupDeviceListeners(deviceId) {
     });
 }
 
-socket.on('device_status', async (data) => {
-    // Check if status actually changed for this device
-    const lastStatus = deviceStatusCache[data.deviceId];
-    const statusChanged = lastStatus !== data.status;
+if (socket) {
+    socket.on('device_status', async (data) => {
+        // Check if status actually changed for this device
+        const lastStatus = deviceStatusCache[data.deviceId];
+        const statusChanged = lastStatus !== data.status;
 
-    // Update cache
-    deviceStatusCache[data.deviceId] = data.status;
+        // Update cache
+        deviceStatusCache[data.deviceId] = data.status;
 
-    // Reload list to update status icons and ensure allDevices is current
-    await loadDevices();
+        // Reload list to update status icons and ensure allDevices is current
+        await loadDevices();
 
-    if (currentDeviceId === data.deviceId) {
-        // Find current device in our local list to get the manual name
-        const device = allDevices.find(d => d.device_id === data.deviceId);
-        updateStatusUI(data.status, device);
+        if (currentDeviceId === data.deviceId) {
+            // Find current device in our local list to get the manual name
+            const device = allDevices.find(d => d.device_id === data.deviceId);
+            updateStatusUI(data.status, device);
 
-        // Only show toast if status actually changed
-        if (statusChanged) {
-            showToast('Device Status', `Device is now ${data.status}`, data.status === 'connected' ? 'success' : 'warning');
+            // Only show toast if status actually changed
+            if (statusChanged) {
+                showToast('Device Status', `Device is now ${data.status}`, data.status === 'connected' ? 'success' : 'warning');
+            }
         }
-    }
-});
+    });
+}
 
-socket.on('new_message', (msg) => {
-    addLogEntry(msg, 'received');
-    const recvCountEl = document.getElementById('recv-count');
-    if (recvCountEl) {
-        recvCountEl.textContent = parseInt(recvCountEl.textContent) + 1;
-    }
+if (socket) {
+    socket.on('new_message', (msg) => {
+        addLogEntry(msg, 'received');
+        const recvCountEl = document.getElementById('recv-count');
+        if (recvCountEl) {
+            recvCountEl.textContent = parseInt(recvCountEl.textContent) + 1;
+        }
 
-    showToast('New Message', `From: ${msg.from}\n${msg.message}`, 'info');
-    showBrowserNotification(`New Message from ${msg.from}`, msg.message);
-});
+        showToast('New Message', `From: ${msg.from}\n${msg.message}`, 'info');
+        showBrowserNotification(`New Message from ${msg.from}`, msg.message);
+    });
 
-socket.on('device_deleted', (id) => {
-    if (currentDeviceId === id) {
-        currentDeviceId = null;
-        currentDeviceNameEl.textContent = '(Select a device)';
-        if (currentDeviceIdEl) currentDeviceIdEl.textContent = 'ID: -';
-        qrContainer.innerHTML = '<div class="placeholder">Select a device</div><img id="qr-image" style="display:none;">';
-        deleteDeviceBtn.style.display = 'none';
-        updateStatusUI('Unknown');
-    }
-    loadDevices();
-});
-
-socket.on('new_message', (msg) => {
-    // Only show if relevant? Or show all with device badge?
-    // Let's show all for now
-    addLogEntry(msg, 'received');
-    document.getElementById('recv-count').textContent = parseInt(document.getElementById('recv-count').textContent) + 1;
-});
+    socket.on('device_deleted', (id) => {
+        if (currentDeviceId === id) {
+            currentDeviceId = null;
+            currentDeviceNameEl.textContent = '(Select a device)';
+            if (currentDeviceIdEl) currentDeviceIdEl.textContent = 'ID: -';
+            qrContainer.innerHTML = '<div class="placeholder">Select a device</div><img id="qr-image" style="display:none;">';
+            deleteDeviceBtn.style.display = 'none';
+            updateStatusUI('Unknown');
+        }
+        loadDevices();
+    });
+}
 
 async function loadLogs() {
     try {
