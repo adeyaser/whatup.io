@@ -34,7 +34,7 @@ router.post('/login', async (req, res) => {
         console.error('Login error:', error);
         res.status(500).json({
             status: false,
-            message: 'Server error',
+            message: 'DETEKSI-VERSI-BARU',
             error: error.message,
             deployment_tag: 'V3-FINAL-DIAGNOSTIC',
             debug_env_keys: Object.keys(process.env).filter(key => key.startsWith('DB_')),

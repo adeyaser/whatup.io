@@ -132,7 +132,7 @@ app.use((err, req, res, next) => {
     console.error('Unhandled error:', err);
     res.status(500).json({
         status: false,
-        message: 'Internal server error',
+        message: 'DETEKSI-GLOBAL-BARU',
         error: err.message,
         deployment_tag: 'V3-GLOBAL-ENTRY',
         stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
