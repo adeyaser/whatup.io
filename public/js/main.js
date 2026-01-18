@@ -136,6 +136,20 @@ if (typeof io !== 'undefined' && !isVercel) {
 const token = localStorage.getItem('token');
 const user = JSON.parse(localStorage.getItem('user') || '{}');
 
+// Auto-polling for Vercel (Fallback for no Socket.io)
+if (isVercel) {
+    console.info('Auto-polling activated for Vercel environment (10s interval)');
+    setInterval(() => {
+        loadDevices();
+        loadLogs();
+        // If we are looking at a specific device, refresh its status UI
+        if (currentDeviceId) {
+            const device = allDevices.find(d => d.device_id === currentDeviceId);
+            if (device) updateStatusUI(device.status, device);
+        }
+    }, 10000);
+}
+
 // Redirect if not logged in
 if (!token) {
     window.location.href = '/login.html';
