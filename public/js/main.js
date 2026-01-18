@@ -313,6 +313,14 @@ function updateStatusUI(status, device = null) {
                 // If we have a QR code in the device object (from DB), use it
                 if (device && device.qr_code) {
                     currentQrImage.src = device.qr_code;
+                    currentQrImage.style.display = 'block';
+                    if (placeholder) placeholder.style.display = 'none';
+                } else {
+                    currentQrImage.style.display = 'none';
+                    if (placeholder) {
+                        placeholder.style.display = 'block';
+                        placeholder.textContent = 'Generating QR Code...';
+                    }
                 }
             }
         } else {
