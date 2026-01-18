@@ -190,6 +190,77 @@
                     "response": []
                 }
             ]
+        },
+        {
+            "name": "4. Scheduler",
+            "item": [
+                {
+                    "name": "Get Status",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/scheduler/status",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "scheduler",
+                                "status"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Settings",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\r\n    \"enabled\": true,\r\n    \"batch_size\": 10,\r\n    \"interval_minutes\": 15,\r\n    \"min_delay_seconds\": 20,\r\n    \"max_delay_seconds\": 45\r\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/scheduler/settings",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "scheduler",
+                                "settings"
+                            ]
+                        }
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Trigger Retry",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/scheduler/trigger",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "scheduler",
+                                "trigger"
+                            ]
+                        }
+                    },
+                    "response": []
+                }
+            ]
         }
     ],
     "auth": {

@@ -220,13 +220,13 @@ const deleteDevice = async (deviceId) => {
 };
 
 const sendMessage = async (deviceId, to, type, content, caption = '') => {
-    const sock = sessions.get(deviceId);
-    if (!sock) throw new Error(`Device ${deviceId} not found or not connected`);
-
     const jid = to.includes('@s.whatsapp.net') ? to : `${to}@s.whatsapp.net`;
     let sentMsg;
 
     try {
+        const sock = sessions.get(deviceId);
+        if (!sock) throw new Error(`Device ${deviceId} not found or not connected`);
+
         if (type === 'text') {
             sentMsg = await sock.sendMessage(jid, { text: content });
         } else if (type === 'image') {
@@ -251,6 +251,7 @@ const sendMessage = async (deviceId, to, type, content, caption = '') => {
                 'INSERT INTO message_logs (remote_jid, direction, type, content, status, device_id, retry_count, error_message) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
                 [jid, 'OUT', type, (type === 'text' ? content : `[${type}] ${caption}`), 'failed', deviceId, 0, error.message]
             );
+            console.log(`Failed message logged for retry: ${jid}`);
         } catch (logError) {
             console.error('Error logging failed message:', logError);
         }

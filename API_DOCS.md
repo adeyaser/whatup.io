@@ -129,6 +129,30 @@ For easy API testing, we have provided a full Postman Collection.
 }
 ```
 
+### Scheduler Management (Retry Failed Messages)
+
+The system automatically retries failed messages every 30 minutes (5 messages per batch). You can also manage these settings via API.
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/scheduler/status` | Get current scheduler status and settings. |
+| `POST` | `/api/scheduler/settings` | Update scheduler settings. (Body see below) |
+| `POST` | `/api/scheduler/trigger` | Manually trigger a retry cycle now. |
+
+#### Update Settings Body
+
+```json
+{
+    "enabled": true,
+    "batch_size": 10,
+    "interval_minutes": 15,
+    "min_delay_seconds": 20,
+    "max_delay_seconds": 45,
+    "max_retries": 3,
+    "cooldown_minutes": 5
+}
+```
+
 ---
 
 ## 💻 Code Integration Examples

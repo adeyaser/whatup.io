@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { sendMessage } = require('../services/whatsappService');
+const { getSchedulerStatus, updateSettings, processFailedMessages } = require('../services/messageScheduler');
 
 router.post('/send-message', async (req, res) => {
     const { deviceId, number, message } = req.body;
@@ -40,12 +41,50 @@ router.get('/logs', async (req, res) => {
         res.json({ status: true, data: rows });
     } catch (e) {
         console.error('Error fetching logs:', e);
-        res.status(500).json({ 
-            status: false, 
+        res.status(500).json({
+            status: false,
             message: 'Failed to fetch logs',
             error: process.env.NODE_ENV === 'development' ? e.message : undefined
         });
     }
 });
 
+// ===== Scheduler Settings API =====
+
+// Get scheduler status and settings
+router.get('/scheduler/status', (req, res) => {
+    try {
+        const status = getSchedulerStatus();
+        res.json({ status: true, data: status });
+    } catch (error) {
+        res.status(500).json({ status: false, message: error.message });
+    }
+});
+
+// Update scheduler settings
+router.post('/scheduler/settings', async (req, res) => {
+    try {
+        const success = await updateSettings(req.body);
+        if (success) {
+            const status = getSchedulerStatus();
+            res.json({ status: true, message: 'Settings updated', data: status });
+        } else {
+            res.status(400).json({ status: false, message: 'No valid settings provided' });
+        }
+    } catch (error) {
+        res.status(500).json({ status: false, message: error.message });
+    }
+});
+
+// Trigger manual retry (for testing)
+router.post('/scheduler/trigger', async (req, res) => {
+    try {
+        processFailedMessages();
+        res.json({ status: true, message: 'Retry cycle triggered' });
+    } catch (error) {
+        res.status(500).json({ status: false, message: error.message });
+    }
+});
+
 module.exports = router;
+
