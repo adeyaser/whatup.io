@@ -515,10 +515,13 @@ function renderGroupsTable(groups) {
         tr.innerHTML = `
             <td style="padding: 0.75rem;">${g.name}</td>
             <td style="padding: 0.75rem;">${g.member_count} members</td>
-            <td style="padding: 0.75rem; text-align: right;">
-                <button class="btn-secondary" onclick="openMembersModal(${g.id}, '${g.name}')" style="font-size: 0.8rem; padding: 0.25rem 0.75rem; border-radius: 6px; border: 1px solid #e2e8f0; background: white; color: #475569; cursor: pointer; transition: all 0.2s;">Manage</button>
-                <button onclick="deleteGroup(${g.id})" style="color: #ef4444; background: #fef2f2; border: none; cursor: pointer; margin-left: 0.5rem; width: 28px; height: 28px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s;" title="Delete group">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M19 7a1 1 0 0 0-1 1v11.191A1.92 1.92 0 0 1 15.99 21H8.01A1.92 1.92 0 0 1 6 19.191V8a1 1 0 0 0-2 0v11.191A3.918 3.918 0 0 0 8.01 23h7.98A3.918 3.918 0 0 0 20 19.191V8a1 1 0 0 0-1-1Zm1-3h-4V2a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v2H4a1 1 0 0 0 0 2h16a1 1 0 0 0 0-2ZM10 4V3h4v1Z"/></svg>
+            <td style="padding: 0.75rem; text-align: right; display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center;">
+                <button class="btn-secondary" onclick="openMembersModal(${g.id}, '${g.name}')" style="font-size: 0.8rem; padding: 0.4rem 0.75rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.3rem;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                    Manage
+                </button>
+                <button onclick="deleteGroup(${g.id})" style="background: #fee2e2; color: #dc2626; border: none; width: 32px; height: 32px; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s;" title="Delete Group">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                 </button>
             </td>
         `;
