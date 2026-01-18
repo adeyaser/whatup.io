@@ -133,7 +133,8 @@ app.use((err, req, res, next) => {
     res.status(500).json({
         status: false,
         message: 'Internal server error',
-        error: err.message, // Re-enabled for debugging
+        error: err.message,
+        deployment_tag: 'V3-GLOBAL-ENTRY',
         stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
     });
 });

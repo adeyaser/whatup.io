@@ -36,7 +36,8 @@ router.post('/login', async (req, res) => {
             status: false,
             message: 'Server error',
             error: error.message,
-            debug_env_keys: Object.keys(process.env).filter(key => key.startsWith('DB_')), // Diagnostic
+            deployment_tag: 'V3-FINAL-DIAGNOSTIC',
+            debug_env_keys: Object.keys(process.env).filter(key => key.startsWith('DB_')),
             stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
         });
     }
