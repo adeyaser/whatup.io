@@ -120,8 +120,15 @@ window.addMember = async function () {
 
 // Initialize Socket.io safely
 let socket;
-if (typeof io !== 'undefined') {
-    socket = io();
+const isVercel = window.location.hostname.includes('vercel.app');
+
+if (typeof io !== 'undefined' && !isVercel) {
+    socket = io({
+        reconnectionAttempts: 5,
+        timeout: 10000
+    });
+} else if (isVercel) {
+    console.info('Running on Vercel: Socket.io real-time updates are disabled (Vercel does not support persistent WebSockets). Please refresh the page manually for updates.');
 } else {
     console.warn('Socket.io not loaded. Real-time updates will be unavailable.');
 }
@@ -178,6 +185,9 @@ if (socket) {
         socketStatusDot.classList.remove('connected');
         socketStatusText.textContent = 'Socket: Disconnected';
     });
+} else if (isVercel) {
+    socketStatusDot.style.backgroundColor = '#94a3b8'; // Passive gray
+    socketStatusText.textContent = 'Socket: N/A (Vercel)';
 }
 
 // Device List Management
