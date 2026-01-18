@@ -536,7 +536,7 @@ function renderGroupsTable(groups) {
 function renderGroupSelect(groups) {
     const contactGroupSelect = document.getElementById('contact-group-select');
     if (!contactGroupSelect) {
-        console.error('contact-group-select element not found in DOM');
+        // Element is optional, silently return if not present
         return;
     }
     contactGroupSelect.innerHTML = '<option value="">Select a Group...</option>';
