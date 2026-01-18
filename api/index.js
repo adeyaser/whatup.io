@@ -97,7 +97,7 @@ app.get('/api/devices', authenticateToken, async (req, res) => {
         const pool = require('../src/config/database');
         const { sessions } = require('../src/services/whatsappService');
 
-        const [rows] = await pool.query('SELECT device_id, name, status, created_at FROM devices');
+        const [rows] = await pool.query('SELECT device_id, name, status, qr_code, created_at FROM devices');
         const devices = rows.map(d => ({
             ...d,
             // On Vercel (serverless), local sessions don't exist. We trust the DB status updated by the main server.

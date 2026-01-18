@@ -139,9 +139,9 @@ const user = JSON.parse(localStorage.getItem('user') || '{}');
 // Auto-polling for Vercel (Fallback for no Socket.io)
 if (isVercel) {
     console.info('Auto-polling activated for Vercel environment (10s interval)');
-    setInterval(() => {
-        loadDevices();
-        loadLogs();
+    setInterval(async () => {
+        await loadDevices();
+        await loadLogs();
         // If we are looking at a specific device, refresh its status UI
         if (currentDeviceId) {
             const device = allDevices.find(d => d.device_id === currentDeviceId);
@@ -308,7 +308,13 @@ function updateStatusUI(status, device = null) {
             if (currentQrImage) currentQrImage.style.display = 'none';
         } else if (status === 'scanning') {
             if (placeholder) placeholder.style.display = 'none';
-            if (currentQrImage) currentQrImage.style.display = 'block';
+            if (currentQrImage) {
+                currentQrImage.style.display = 'block';
+                // If we have a QR code in the device object (from DB), use it
+                if (device && device.qr_code) {
+                    currentQrImage.src = device.qr_code;
+                }
+            }
         } else {
             if (placeholder) {
                 placeholder.textContent = status === 'connecting' ? 'Connecting...' : 'Device Disconnected';

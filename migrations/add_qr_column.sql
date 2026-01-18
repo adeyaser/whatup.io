@@ -1,0 +1,1 @@
+ALTER TABLE devices ADD COLUMN IF NOT EXISTS qr_code TEXT AFTER status;
