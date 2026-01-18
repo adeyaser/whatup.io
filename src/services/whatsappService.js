@@ -130,11 +130,13 @@ const startSession = async (deviceId) => {
             browser: [getDomainName(), 'Chrome', '1.0.0'],
             generateHighQualityLinkPreview: false,
             syncFullHistory: false,
+            downloadHistory: false,
+            maxMsgCacheSize: 0,
             shouldIgnoreJid: jid => jid.includes('@broadcast'),
-            connectTimeoutMs: 30000, // Reduced from 60s for faster failure/retry cycle
-            defaultQueryTimeoutMs: 0,
-            keepAliveIntervalMs: 10000,
-            retryRequestDelayMs: 250 // Faster retries for internal requests
+            connectTimeoutMs: 30000,
+            defaultQueryTimeoutMs: 30000, // Increased for 1GB limit stability
+            keepAliveIntervalMs: 30000,    // Increased to 30s to save CPU/RAM
+            retryRequestDelayMs: 1000      // Slower retries to prevent spikes
         });
 
         sessions.set(deviceId, sock);
@@ -189,12 +191,18 @@ const startSession = async (deviceId) => {
                     if (sock) {
                         sock.isReady = false;
                         sock.ev.removeAllListeners(); // Prevent old callbacks
+
+                        // Ultra-light: Help GC by nullifying listeners and states
+                        try {
+                            Object.keys(sock.ev).forEach(key => delete sock.ev[key]);
+                        } catch (e) { }
                     }
 
                     console.log(`[${deviceId}] ❌ Connection closed. Status: ${statusCode}, Reason: ${reason}. Reconnecting: ${shouldReconnect}`);
 
                     // Remove from active sessions
                     sessions.delete(deviceId);
+                    if (global.gc) global.gc(); // Aggressive cleanup
 
                     if (shouldReconnect) {
                         // Mark as reconnecting (this prevents 'Device not found' in sendMessage)
@@ -321,6 +329,7 @@ const deleteDevice = async (deviceId) => {
             sock.ev.removeAllListeners();
             sock.end(undefined);
             sessions.delete(deviceId);
+            if (global.gc) global.gc(); // Aggressive cleanup
         }
 
         // Thorough state cleanup

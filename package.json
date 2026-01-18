@@ -5,9 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node src/app.js",
-    "dev": "NODE_ENV=development node src/app.js",
-    "prod": "NODE_ENV=production node src/app.js",
+    "start": "node --max-old-space-size=512 --optimize_for_size --gc_interval=100 --min-semi-space-size=2 --max-semi-space-size=4 --expose-gc src/app.js",
+    "dev": "NODE_ENV=development node --max-old-space-size=512 --optimize_for_size --gc_interval=100 --min-semi-space-size=2 --max-semi-space-size=4 --expose-gc src/app.js",
+    "prod": "NODE_ENV=production node --max-old-space-size=512 --optimize_for_size --gc_interval=100 --min-semi-space-size=2 --max-semi-space-size=4 --expose-gc src/app.js",
     "pm2:start": "pm2 start ecosystem.config.js --env production",
     "pm2:stop": "pm2 stop wa-gateway",
     "pm2:restart": "pm2 restart wa-gateway",
