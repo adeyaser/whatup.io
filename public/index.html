@@ -509,7 +509,10 @@ var content = await response.Content.ReadAsStringAsync();</pre>
             <div class="modal-body">
                 <div class="form-group">
                     <label for="new-device-id">Device ID (Unique)</label>
-                    <input type="text" id="new-device-id" placeholder="my-business-wa">
+                    <input type="text" id="new-device-id" placeholder="my-business-wa" readonly
+                        style="background-color: #f1f5f9; cursor: not-allowed; color: #64748b; font-weight: 500;">
+                    <small style="color: #64748b; font-size: 0.75rem; margin-top: 0.25rem; display: block;">*
+                        Auto-generated for stability and cannot be edited.</small>
                 </div>
                 <div class="form-group">
                     <label for="new-device-name">Display Name</label>

@@ -256,6 +256,11 @@ function selectDevice(device) {
 function updateStatusUI(status, device = null) {
     waStatusBadge.textContent = `Status: ${status}`;
 
+    // Refresh elements in case they were lost or re-rendered
+    const currentQrContainer = document.getElementById('qr-container');
+    const currentQrImage = document.getElementById('qr-image');
+    const placeholder = currentQrContainer ? currentQrContainer.querySelector('.placeholder') : null;
+
     // Status configuration
     const statusConfig = {
         'connected': { icon: '🟢', color: '#22c55e', bgColor: '#f0fdf4', borderColor: '#22c55e' },
@@ -267,13 +272,33 @@ function updateStatusUI(status, device = null) {
     const config = statusConfig[status] || statusConfig['disconnected'];
     waStatusBadge.style.color = config.color;
 
+    // Handle QR Area display without breaking references
+    if (currentQrContainer) {
+        if (status === 'connected') {
+            if (placeholder) {
+                placeholder.innerHTML = '<div style="color: green; font-size: 3rem;">✔</div><p>Device Connected</p>';
+                placeholder.style.display = 'block';
+            }
+            if (currentQrImage) currentQrImage.style.display = 'none';
+        } else if (status === 'scanning') {
+            if (placeholder) placeholder.style.display = 'none';
+            if (currentQrImage) currentQrImage.style.display = 'block';
+        } else {
+            if (placeholder) {
+                placeholder.textContent = status === 'connecting' ? 'Connecting...' : 'Device Disconnected';
+                placeholder.style.display = 'block';
+            }
+            if (currentQrImage) currentQrImage.style.display = 'none';
+        }
+    }
+
     // Update connection badge
     const badge = document.getElementById('connection-status-badge');
     const statusIcon = document.getElementById('status-icon');
     const statusText = document.getElementById('status-text');
     const deviceNameBadge = document.getElementById('device-name-badge');
 
-    if (badge && status !== 'disconnected' && status !== 'connecting') {
+    if (badge && status !== 'disconnected' && status !== 'connecting' && status !== 'Unknown') {
         statusIcon.textContent = config.icon;
         statusText.textContent = status.charAt(0).toUpperCase() + status.slice(1);
         statusText.style.color = config.color;
@@ -290,23 +315,28 @@ function updateStatusUI(status, device = null) {
     }
 }
 
-let activeDeviceListeners = {};
 let deviceStatusCache = {}; // Track last known status per device
 
 function setupDeviceListeners(deviceId) {
-    // Clean up old listeners if needed (Socket.io multiplexing usually handles this, but custom logic helps)
+    // Clean up old listeners
     socket.off(`qr_code:${deviceId}`);
 
     socket.on(`qr_code:${deviceId}`, (url) => {
         if (currentDeviceId !== deviceId) return;
-        qrImage.src = url;
-        qrImage.style.display = 'block';
-        qrContainer.querySelector('.placeholder').style.display = 'none';
+        const currentQrImage = document.getElementById('qr-image');
+        const placeholder = document.querySelector('#qr-container .placeholder');
+
+        if (currentQrImage) {
+            currentQrImage.src = url;
+            currentQrImage.style.display = 'block';
+        }
+        if (placeholder) placeholder.style.display = 'none';
+
         updateStatusUI('scanning');
     });
 }
 
-socket.on('device_status', (data) => {
+socket.on('device_status', async (data) => {
     // Check if status actually changed for this device
     const lastStatus = deviceStatusCache[data.deviceId];
     const statusChanged = lastStatus !== data.status;
@@ -314,22 +344,17 @@ socket.on('device_status', (data) => {
     // Update cache
     deviceStatusCache[data.deviceId] = data.status;
 
-    // Reload list to update status icons
-    loadDevices();
+    // Reload list to update status icons and ensure allDevices is current
+    await loadDevices();
 
     if (currentDeviceId === data.deviceId) {
-        updateStatusUI(data.status);
+        // Find current device in our local list to get the manual name
+        const device = allDevices.find(d => d.device_id === data.deviceId);
+        updateStatusUI(data.status, device);
 
         // Only show toast if status actually changed
         if (statusChanged) {
             showToast('Device Status', `Device is now ${data.status}`, data.status === 'connected' ? 'success' : 'warning');
-        }
-
-        if (data.status === 'connected') {
-            qrContainer.innerHTML = '<div style="color: green; font-size: 3rem;">✔</div><p>Device Connected</p>';
-        } else if (data.status === 'disconnected') {
-            qrContainer.innerHTML = '<div class="placeholder">Device Disconnected</div><img id="qr-image" style="display:none;">';
-            // Re-bind elements since innerHTML replaced
         }
     }
 });
@@ -451,10 +476,14 @@ addBtn.onclick = () => {
     modal.classList.add('open');
     modal.style.display = 'flex';
     modal.setAttribute('aria-hidden', 'false');
-    // clear inputs and focus
-    document.getElementById('new-device-id').value = '';
+
+    // Auto-generate unique ID
+    const randomId = 'dev_' + Math.random().toString(16).slice(2, 10);
+    document.getElementById('new-device-id').value = randomId;
     document.getElementById('new-device-name').value = '';
-    setTimeout(() => document.getElementById('new-device-id').focus(), 50);
+
+    // Focus the name field instead, since ID is already filled
+    setTimeout(() => document.getElementById('new-device-name').focus(), 50);
 };
 
 cancelBtn.onclick = () => {

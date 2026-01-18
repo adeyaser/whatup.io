@@ -98,15 +98,17 @@ const processFailedMessages = async () => {
     console.log('[Scheduler] Starting retry cycle...');
 
     try {
-        // Get failed messages that are old enough (cooldown) and under retry limit
+        // Get failed messages, prioritizing those from devices that are currently 'connected'
+        // We fetch more than batch_size so we can skip offline ones without wasting a cycle
         const [rows] = await pool.query(`
-            SELECT * FROM message_logs 
-            WHERE status = 'failed' 
-              AND retry_count < ?
-              AND created_at < DATE_SUB(NOW(), INTERVAL ? MINUTE)
-            ORDER BY created_at ASC 
-            LIMIT ?
-        `, [currentConfig.max_retries, currentConfig.cooldown_minutes, currentConfig.batch_size]);
+            SELECT m.* FROM message_logs m
+            LEFT JOIN devices d ON m.device_id = d.device_id
+            WHERE m.status = 'failed' 
+              AND m.retry_count < ?
+              AND m.created_at < DATE_SUB(NOW(), INTERVAL ? MINUTE)
+            ORDER BY (CASE WHEN d.status = 'connected' THEN 0 ELSE 1 END), m.created_at ASC 
+            LIMIT 50
+        `, [currentConfig.max_retries, currentConfig.cooldown_minutes]);
 
         if (rows.length === 0) {
             console.log('[Scheduler] No failed messages to retry.');
@@ -114,10 +116,14 @@ const processFailedMessages = async () => {
             return;
         }
 
-        console.log(`[Scheduler] Found ${rows.length} failed messages to retry.`);
+        console.log(`[Scheduler] Scanning ${rows.length} potential failed messages...`);
+        let processedCount = 0;
 
         for (let i = 0; i < rows.length; i++) {
+            if (processedCount >= currentConfig.batch_size) break;
+
             const log = rows[i];
+
 
             // Check if device is connected
             const sock = sessions.get(log.device_id);
@@ -130,8 +136,10 @@ const processFailedMessages = async () => {
                 console.log(`[Scheduler] Retrying message ${log.id} (attempt ${log.retry_count + 1}/${currentConfig.max_retries})...`);
                 await retryMessage(log.id);
                 console.log(`[Scheduler] Message ${log.id} sent successfully!`);
+                processedCount++;
             } catch (error) {
                 console.error(`[Scheduler] Failed to retry message ${log.id}:`, error.message);
+                processedCount++;
 
                 // Check if max retries exceeded
                 if (log.retry_count + 1 >= currentConfig.max_retries) {
@@ -140,8 +148,8 @@ const processFailedMessages = async () => {
                 }
             }
 
-            // Wait before next message (if not last)
-            if (i < rows.length - 1) {
+            // Wait before next message (if not last and budget remains)
+            if (i < rows.length - 1 && processedCount < currentConfig.batch_size) {
                 const delay = getRandomDelay();
                 console.log(`[Scheduler] Waiting ${Math.round(delay / 1000)}s before next message...`);
                 await sleep(delay);
@@ -158,9 +166,9 @@ const processFailedMessages = async () => {
 
 // Start the scheduler
 const startScheduler = async () => {
+    // If already running, stop it first to refresh interval
     if (schedulerInterval) {
-        console.log('[Scheduler] Already running.');
-        return;
+        stopScheduler();
     }
 
     // Load settings from DB
@@ -171,11 +179,11 @@ const startScheduler = async () => {
         return;
     }
 
-    const intervalMs = currentConfig.interval_minutes * 60 * 1000;
+    const intervalMs = Math.max(currentConfig.interval_minutes, 1) * 60 * 1000;
     console.log(`[Scheduler] Started. Will retry up to ${currentConfig.batch_size} failed messages every ${currentConfig.interval_minutes} minutes.`);
 
-    // Run immediately on start
-    processFailedMessages();
+    // Run first cycle after a short delay to let sessions stabilize
+    setTimeout(processFailedMessages, 10000);
 
     // Then run at interval
     schedulerInterval = setInterval(processFailedMessages, intervalMs);

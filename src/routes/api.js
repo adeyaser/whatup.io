@@ -14,6 +14,9 @@ router.post('/send-message', async (req, res) => {
         await sendMessage(deviceId, number, 'text', message);
         res.json({ status: true, message: 'Message sent successfully' });
     } catch (error) {
+        if (error.isQueued) {
+            return res.status(202).json({ status: true, message: error.message, queued: true });
+        }
         res.status(500).json({ status: false, message: 'Failed to send message', error: error.message });
     }
 });
@@ -29,6 +32,9 @@ router.post('/send-media', async (req, res) => {
         await sendMessage(deviceId, number, type, url, caption);
         res.json({ status: true, message: 'Media sent successfully' });
     } catch (error) {
+        if (error.isQueued) {
+            return res.status(202).json({ status: true, message: error.message, queued: true });
+        }
         res.status(500).json({ status: false, message: 'Failed to send media', error: error.message });
     }
 });
