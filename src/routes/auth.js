@@ -32,10 +32,11 @@ router.post('/login', async (req, res) => {
 
     } catch (error) {
         console.error('Login error:', error);
-        res.status(500).json({ 
-            status: false, 
+        res.status(500).json({
+            status: false,
             message: 'Server error',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+            error: error.message, // Temporarily enabled for Vercel debugging
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
         });
     }
 });
