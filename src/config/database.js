@@ -1,8 +1,11 @@
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
+const dbHost = process.env.DB_HOST || 'localhost';
+console.log(`[Database] Attempting connection to host: ${dbHost}`);
+
 const pool = mysql.createPool({
-    host: process.env.DB_HOST || 'localhost',
+    host: dbHost,
     port: process.env.DB_PORT || 3306,
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',

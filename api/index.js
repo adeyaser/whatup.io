@@ -51,7 +51,7 @@ app.post('/api/device/add', authenticateToken, async (req, res) => {
 
         const { createDevice } = require('../src/services/whatsappService');
         const success = await createDevice(deviceId, name);
-        
+
         if (success) {
             res.json({ status: true, message: 'Device created and session started' });
         } else {
@@ -59,8 +59,8 @@ app.post('/api/device/add', authenticateToken, async (req, res) => {
         }
     } catch (error) {
         console.error('Error in /api/device/add:', error);
-        res.status(500).json({ 
-            status: false, 
+        res.status(500).json({
+            status: false,
             message: 'Failed to create device',
             error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
@@ -76,7 +76,7 @@ app.post('/api/device/delete', authenticateToken, async (req, res) => {
 
         const { deleteDevice } = require('../src/services/whatsappService');
         const success = await deleteDevice(deviceId);
-        
+
         if (success) {
             res.json({ status: true, message: 'Device deleted' });
         } else {
@@ -84,8 +84,8 @@ app.post('/api/device/delete', authenticateToken, async (req, res) => {
         }
     } catch (error) {
         console.error('Error in /api/device/delete:', error);
-        res.status(500).json({ 
-            status: false, 
+        res.status(500).json({
+            status: false,
             message: 'Failed to delete device',
             error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
@@ -96,18 +96,18 @@ app.get('/api/devices', authenticateToken, async (req, res) => {
     try {
         const pool = require('../src/config/database');
         const { sessions } = require('../src/services/whatsappService');
-        
+
         const [rows] = await pool.query('SELECT device_id, name, status, created_at FROM devices');
         const devices = rows.map(d => ({
             ...d,
             online: sessions.has(d.device_id)
         }));
-        
+
         res.json({ status: true, data: devices });
     } catch (error) {
         console.error('Error in /api/devices:', error);
-        res.status(500).json({ 
-            status: false, 
+        res.status(500).json({
+            status: false,
             message: 'Error fetching devices',
             error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
@@ -130,10 +130,11 @@ app.get('/health', (req, res) => {
 // Error handling middleware (must be last)
 app.use((err, req, res, next) => {
     console.error('Unhandled error:', err);
-    res.status(500).json({ 
-        status: false, 
+    res.status(500).json({
+        status: false,
         message: 'Internal server error',
-        error: process.env.NODE_ENV === 'development' ? err.message : undefined
+        error: err.message, // Re-enabled for debugging
+        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
     });
 });
 
