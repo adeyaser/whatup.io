@@ -308,21 +308,7 @@ function updateStatusUI(status, device = null) {
             if (currentQrImage) currentQrImage.style.display = 'none';
         } else if (status === 'scanning') {
             if (placeholder) placeholder.style.display = 'none';
-            if (currentQrImage) {
-                currentQrImage.style.display = 'block';
-                // If we have a QR code in the device object (from DB), use it
-                if (device && device.qr_code) {
-                    currentQrImage.src = device.qr_code;
-                    currentQrImage.style.display = 'block';
-                    if (placeholder) placeholder.style.display = 'none';
-                } else {
-                    currentQrImage.style.display = 'none';
-                    if (placeholder) {
-                        placeholder.style.display = 'block';
-                        placeholder.textContent = 'Generating QR Code...';
-                    }
-                }
-            }
+            if (currentQrImage) currentQrImage.style.display = 'block';
         } else {
             if (placeholder) {
                 placeholder.textContent = status === 'connecting' ? 'Connecting...' : 'Device Disconnected';

@@ -1,15 +1,16 @@
 const pool = require('./src/config/database');
 
-async function checkSchema() {
+async function checkData() {
     try {
-        const [rows] = await pool.query('DESCRIBE devices');
-        console.log('--- Devices Table Schema ---');
+        const [rows] = await pool.query('SELECT device_id, status, CHAR_LENGTH(qr_code) as qr_len FROM devices');
+        console.log('--- Devices Current Data ---');
         console.table(rows);
-        const hasQr = rows.find(r => r.Field === 'qr_code');
-        if (hasQr) {
-            console.log('✅ Column qr_code exists.');
+
+        const scanningCount = rows.filter(r => r.status === 'scanning' && r.qr_len > 0).length;
+        if (scanningCount > 0) {
+            console.log(`✅ ${scanningCount} devices have active QR codes in DB.`);
         } else {
-            console.log('❌ Column qr_code is MISSING!');
+            console.log('❌ No active QR codes found in DB. Make sure your local script is running.');
         }
         process.exit(0);
     } catch (err) {
@@ -18,4 +19,4 @@ async function checkSchema() {
     }
 }
 
-checkSchema();
+checkData();

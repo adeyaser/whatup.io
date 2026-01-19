@@ -166,19 +166,19 @@ const startSession = async (deviceId) => {
                 const { connection, lastDisconnect, qr } = update;
 
                 if (qr) {
-                    QRCode.toDataURL(qr, async (err, url) => {
-                        if (!err) {
-                            if (io) io.emit(`qr_code:${deviceId}`, url);
-                            // Save QR to DB for Vercel Polling
-                            try {
-                                await pool.query('UPDATE devices SET status = ?, qr_code = ? WHERE device_id = ?', ['scanning', url, deviceId]);
-                                if (io) io.emit('device_status', { deviceId, status: 'scanning' });
-                                console.log(`[${deviceId}] QR Code saved to DB and emitted`);
-                            } catch (dbErr) {
-                                console.error('Error saving QR to DB:', dbErr);
-                            }
+                    QRCode.toDataURL(qr, (err, url) => {
+                        if (!err && io) {
+                            io.emit(`qr_code:${deviceId}`, url);
+                            console.log(`[${deviceId}] QR Code emitted`);
                         }
                     });
+                    // Update status in DB
+                    try {
+                        await pool.query('UPDATE devices SET status = ? WHERE device_id = ?', ['scanning', deviceId]);
+                        if (io) io.emit('device_status', { deviceId, status: 'scanning' });
+                    } catch (err) {
+                        console.error('Error updating device status:', err);
+                    }
                 }
 
                 if (connection === 'close') {
@@ -262,8 +262,8 @@ const startSession = async (deviceId) => {
                     sock.isReady = true; // Mark as ready for sending
                     const user = sock.user;
                     try {
-                        // Clear QR and update status
-                        await pool.query('UPDATE devices SET status = ?, qr_code = NULL WHERE device_id = ?', ['connected', deviceId]);
+                        // Only update status
+                        await pool.query('UPDATE devices SET status = ? WHERE device_id = ?', ['connected', deviceId]);
                         if (io) io.emit('device_status', { deviceId, status: 'connected', user });
                     } catch (err) {
                         console.error('Error updating device status:', err);
