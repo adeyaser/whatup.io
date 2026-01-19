@@ -1,1 +1,8 @@
-ALTER TABLE devices ADD COLUMN IF NOT EXISTS qr_code TEXT AFTER status;
+-- QR persistence is deprecated: QR is emitted via websocket and should not be stored in DB.
+-- This migration is intentionally left as a no-op to avoid adding a persistent `qr_code` column.
+-- If you previously applied this migration and want to remove the column from your database,
+-- run the following SQL in your MySQL client:
+--
+-- ALTER TABLE devices DROP COLUMN IF EXISTS qr_code;
+--
+-- Keeping this file as documentation rather than removing helps avoid accidental re-adds.
