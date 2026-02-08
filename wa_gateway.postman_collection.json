@@ -1,13 +1,14 @@
 {
     "info": {
-        "_postman_id": "wa-gateway-v8",
-        "name": "WA Gateway Professional",
-        "description": "API Collection for WhatsApp Gateway V8. Includes Authentication, Device Management, and Messaging.",
+        "_postman_id": "wa-gateway-v9-dynamic",
+        "name": "WA Gateway Professional (Dynamic)",
+        "description": "Dynamic API Collection for WhatsApp Gateway. Automatically adapts to your server configuration using environment variables.\n\n**Quick Start:**\n1. Import this collection\n2. Import the environment file (wa_gateway.postman_environment.json)\n3. Select the environment in Postman\n4. Run 'Login' to get your token\n5. All other requests will use the token automatically\n\n**Features:**\n- Dynamic base URL (adapts to your server)\n- Auto-save token after login\n- Pre-configured authentication\n- Complete API coverage",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
     "item": [
         {
-            "name": "1. Auth",
+            "name": "🔐 1. Authentication",
+            "description": "Login and get authentication token",
             "item": [
                 {
                     "name": "Login",
@@ -16,10 +17,25 @@
                             "listen": "test",
                             "script": {
                                 "exec": [
+                                    "// Auto-save token to environment",
                                     "var jsonData = pm.response.json();",
-                                    "if (jsonData.status) {",
+                                    "",
+                                    "if (jsonData.status && jsonData.token) {",
                                     "    pm.environment.set(\"token\", jsonData.token);",
-                                    "    console.log(\"Token set:\", jsonData.token);",
+                                    "    pm.environment.set(\"username\", jsonData.user.username);",
+                                    "    console.log(\"✅ Login successful!\");",
+                                    "    console.log(\"Token:\", jsonData.token);",
+                                    "    console.log(\"User:\", jsonData.user.username);",
+                                    "    ",
+                                    "    pm.test(\"Login successful\", function () {",
+                                    "        pm.response.to.have.status(200);",
+                                    "        pm.expect(jsonData.status).to.be.true;",
+                                    "    });",
+                                    "} else {",
+                                    "    console.log(\"❌ Login failed:\", jsonData.message);",
+                                    "    pm.test(\"Login failed\", function () {",
+                                    "        pm.expect(jsonData.status).to.be.false;",
+                                    "    });",
                                     "}"
                                 ],
                                 "type": "text/javascript"
@@ -28,10 +44,15 @@
                     ],
                     "request": {
                         "method": "POST",
-                        "header": [],
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\r\n    \"username\": \"admin\",\r\n    \"password\": \"admin123\"\r\n}",
+                            "raw": "{\r\n    \"username\": \"{{username}}\",\r\n    \"password\": \"{{password}}\"\r\n}",
                             "options": {
                                 "raw": {
                                     "language": "json"
@@ -47,17 +68,37 @@
                                 "auth",
                                 "login"
                             ]
-                        }
+                        },
+                        "description": "Login with username and password to get authentication token.\n\nDefault credentials:\n- Username: admin\n- Password: admin123"
                     },
                     "response": []
                 }
             ]
         },
         {
-            "name": "2. Devices",
+            "name": "📱 2. Device Management",
+            "description": "Manage WhatsApp devices",
             "item": [
                 {
-                    "name": "Get Devices",
+                    "name": "Get All Devices",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var jsonData = pm.response.json();",
+                                    "",
+                                    "if (jsonData.status && jsonData.data.length > 0) {",
+                                    "    // Save first device ID for other requests",
+                                    "    pm.environment.set(\"device_id\", jsonData.data[0].device_id);",
+                                    "    console.log(\"✅ Found\", jsonData.data.length, \"devices\");",
+                                    "    console.log(\"First device:\", jsonData.data[0].device_id);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
                     "request": {
                         "method": "GET",
                         "header": [],
@@ -70,18 +111,54 @@
                                 "api",
                                 "devices"
                             ]
-                        }
+                        },
+                        "description": "Get list of all registered devices with their status."
                     },
                     "response": []
                 },
                 {
-                    "name": "Add Device",
+                    "name": "Add New Device",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var jsonData = pm.response.json();",
+                                    "",
+                                    "if (jsonData.status) {",
+                                    "    console.log(\"✅ Device created successfully!\");",
+                                    "    pm.test(\"Device created\", function () {",
+                                    "        pm.response.to.have.status(200);",
+                                    "    });",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        },
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "exec": [
+                                    "// Generate random device ID",
+                                    "var randomId = 'dev_' + Math.random().toString(16).slice(2, 10);",
+                                    "pm.environment.set(\"new_device_id\", randomId);",
+                                    "console.log(\"Generated device ID:\", randomId);"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
                     "request": {
                         "method": "POST",
-                        "header": [],
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\r\n    \"deviceId\": \"marketing-01\",\r\n    \"name\": \"Marketing Phone\"\r\n}",
+                            "raw": "{\r\n    \"deviceId\": \"{{new_device_id}}\",\r\n    \"name\": \"Test Device\"\r\n}",
                             "options": {
                                 "raw": {
                                     "language": "json"
@@ -98,7 +175,8 @@
                                 "device",
                                 "add"
                             ]
-                        }
+                        },
+                        "description": "Add a new WhatsApp device. Device ID is auto-generated."
                     },
                     "response": []
                 },
@@ -106,10 +184,15 @@
                     "name": "Delete Device",
                     "request": {
                         "method": "POST",
-                        "header": [],
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\r\n    \"deviceId\": \"marketing-01\"\r\n}",
+                            "raw": "{\r\n    \"deviceId\": \"{{device_id}}\"\r\n}",
                             "options": {
                                 "raw": {
                                     "language": "json"
@@ -126,23 +209,30 @@
                                 "device",
                                 "delete"
                             ]
-                        }
+                        },
+                        "description": "Delete a device by its ID. Uses the device_id from environment."
                     },
                     "response": []
                 }
             ]
         },
         {
-            "name": "3. Messaging",
+            "name": "💬 3. Messaging",
+            "description": "Send messages via WhatsApp",
             "item": [
                 {
-                    "name": "Send Text",
+                    "name": "Send Text Message",
                     "request": {
                         "method": "POST",
-                        "header": [],
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\r\n    \"deviceId\": \"marketing-01\",\r\n    \"number\": \"628123456789\",\r\n    \"message\": \"Hello from API\"\r\n}",
+                            "raw": "{\r\n    \"deviceId\": \"{{device_id}}\",\r\n    \"number\": \"{{test_number}}\",\r\n    \"message\": \"Hello from Postman! This is a test message.\"\r\n}",
                             "options": {
                                 "raw": {
                                     "language": "json"
@@ -158,7 +248,8 @@
                                 "api",
                                 "send-message"
                             ]
-                        }
+                        },
+                        "description": "Send a text message to a WhatsApp number.\n\nFormat: 628123456789 (no + or 0)"
                     },
                     "response": []
                 },
@@ -166,10 +257,15 @@
                     "name": "Send Image",
                     "request": {
                         "method": "POST",
-                        "header": [],
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\r\n    \"deviceId\": \"marketing-01\",\r\n    \"number\": \"628123456789\",\r\n    \"type\": \"image\",\r\n    \"url\": \"https://via.placeholder.com/150\",\r\n    \"caption\": \"Test Image\"\r\n}",
+                            "raw": "{\r\n    \"deviceId\": \"{{device_id}}\",\r\n    \"number\": \"{{test_number}}\",\r\n    \"type\": \"image\",\r\n    \"url\": \"https://via.placeholder.com/600x400.png?text=Test+Image\",\r\n    \"caption\": \"Test image from Postman API\"\r\n}",
                             "options": {
                                 "raw": {
                                     "language": "json"
@@ -185,17 +281,242 @@
                                 "api",
                                 "send-media"
                             ]
-                        }
+                        },
+                        "description": "Send an image with optional caption.\n\nURL must be publicly accessible."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Send Video",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\r\n    \"deviceId\": \"{{device_id}}\",\r\n    \"number\": \"{{test_number}}\",\r\n    \"type\": \"video\",\r\n    \"url\": \"https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4\",\r\n    \"caption\": \"Test video from Postman API\"\r\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/send-media",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "send-media"
+                            ]
+                        },
+                        "description": "Send a video with optional caption.\n\nURL must be publicly accessible and point to a video file."
                     },
                     "response": []
                 }
             ]
         },
         {
-            "name": "4. Scheduler",
+            "name": "📊 4. Logs",
+            "description": "View message logs",
             "item": [
                 {
-                    "name": "Get Status",
+                    "name": "Get Message Logs",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/logs",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "logs"
+                            ]
+                        },
+                        "description": "Get all message logs (sent and received)."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "👥 5. Contact Groups",
+            "description": "Manage contact groups for bulk messaging",
+            "item": [
+                {
+                    "name": "Get All Groups",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "var jsonData = pm.response.json();",
+                                    "",
+                                    "if (jsonData.status && jsonData.data.length > 0) {",
+                                    "    pm.environment.set(\"group_id\", jsonData.data[0].id);",
+                                    "    console.log(\"✅ Found\", jsonData.data.length, \"groups\");",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/groups",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "groups"
+                            ]
+                        },
+                        "description": "Get all contact groups with member counts."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create Group",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\r\n    \"name\": \"VIP Customers\"\r\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/groups/create",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "groups",
+                                "create"
+                            ]
+                        },
+                        "description": "Create a new contact group."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Group Members",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/groups/{{group_id}}/members",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "groups",
+                                "{{group_id}}",
+                                "members"
+                            ]
+                        },
+                        "description": "Get all members of a specific group."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Add Member to Group",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\r\n    \"groupId\": {{group_id}},\r\n    \"number\": \"{{test_number}}\",\r\n    \"name\": \"Test Contact\"\r\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/groups/manage/add-member",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "groups",
+                                "manage",
+                                "add-member"
+                            ]
+                        },
+                        "description": "Add a member to a contact group."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete Group",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\r\n    \"id\": {{group_id}}\r\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/groups/delete",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "groups",
+                                "delete"
+                            ]
+                        },
+                        "description": "Delete a contact group."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "⏰ 6. Scheduler",
+            "description": "Manage message retry scheduler",
+            "item": [
+                {
+                    "name": "Get Scheduler Status",
                     "request": {
                         "method": "GET",
                         "header": [],
@@ -209,18 +530,24 @@
                                 "scheduler",
                                 "status"
                             ]
-                        }
+                        },
+                        "description": "Get current scheduler status and settings."
                     },
                     "response": []
                 },
                 {
-                    "name": "Update Settings",
+                    "name": "Update Scheduler Settings",
                     "request": {
                         "method": "POST",
-                        "header": [],
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\r\n    \"enabled\": true,\r\n    \"batch_size\": 10,\r\n    \"interval_minutes\": 15,\r\n    \"min_delay_seconds\": 20,\r\n    \"max_delay_seconds\": 45\r\n}",
+                            "raw": "{\r\n    \"enabled\": true,\r\n    \"batch_size\": 10,\r\n    \"interval_minutes\": 30,\r\n    \"min_delay_seconds\": 30,\r\n    \"max_delay_seconds\": 60,\r\n    \"max_retries\": 3,\r\n    \"cooldown_minutes\": 5\r\n}",
                             "options": {
                                 "raw": {
                                     "language": "json"
@@ -237,12 +564,13 @@
                                 "scheduler",
                                 "settings"
                             ]
-                        }
+                        },
+                        "description": "Update scheduler configuration."
                     },
                     "response": []
                 },
                 {
-                    "name": "Trigger Retry",
+                    "name": "Trigger Manual Retry",
                     "request": {
                         "method": "POST",
                         "header": [],
@@ -256,7 +584,8 @@
                                 "scheduler",
                                 "trigger"
                             ]
-                        }
+                        },
+                        "description": "Manually trigger message retry process."
                     },
                     "response": []
                 }
@@ -279,6 +608,8 @@
             "script": {
                 "type": "text/javascript",
                 "exec": [
+                    "// Global pre-request script",
+                    "console.log(\"🚀 Request to:\", pm.request.url.toString());",
                     ""
                 ]
             }
@@ -288,7 +619,14 @@
             "script": {
                 "type": "text/javascript",
                 "exec": [
-                    ""
+                    "// Global test script",
+                    "pm.test(\"Response time is less than 5000ms\", function () {",
+                    "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+                    "});",
+                    "",
+                    "pm.test(\"Response has valid JSON\", function () {",
+                    "    pm.response.to.be.json;",
+                    "});"
                 ]
             }
         }
@@ -296,7 +634,7 @@
     "variable": [
         {
             "key": "base_url",
-            "value": "http://localhost:3000",
+            "value": "http://localhost:3002",
             "type": "string"
         },
         {

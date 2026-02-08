@@ -26,7 +26,12 @@ Welcome to the **WhatsApp Gateway Professional V8** documentation. This guide co
     DB_PASSWORD=your_password
     DB_NAME=wa_gateway
     JWT_SECRET=secure_secret_key
+    
+    # QR Code Auto-Delete Configuration
+    QR_SCAN_TIMEOUT=60  # Auto-delete device if QR not scanned within 60 seconds
     ```
+
+**Important:** If you add a new device and don't scan the QR code within the configured timeout (default: 60 seconds), the device will be automatically deleted. Make sure to scan the QR code promptly!
 
 ### Step 3: Start Application
 
@@ -133,11 +138,26 @@ For easy API testing, we have provided a full Postman Collection.
 
 The system automatically retries failed messages every 30 minutes (5 messages per batch). You can also manage these settings via API.
 
+#### Environment Configuration
+
+Add to your `.env` file:
+
+```env
+# Scheduler Configuration
+SCHEDULER_ENABLED=true  # Set to false to disable auto-start on app launch
+```
+
+When `SCHEDULER_ENABLED=false`, the scheduler will not start automatically when the application launches. You can still start it manually using the API endpoints below.
+
+#### API Endpoints
+
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
 | `GET` | `/api/scheduler/status` | Get current scheduler status and settings. |
 | `POST` | `/api/scheduler/settings` | Update scheduler settings. (Body see below) |
 | `POST` | `/api/scheduler/trigger` | Manually trigger a retry cycle now. |
+| `POST` | `/api/scheduler/start` | **Start the scheduler manually.** |
+| `POST` | `/api/scheduler/stop` | **Stop the scheduler manually.** |
 
 #### Update Settings Body
 
@@ -150,6 +170,53 @@ The system automatically retries failed messages every 30 minutes (5 messages pe
     "max_delay_seconds": 45,
     "max_retries": 3,
     "cooldown_minutes": 5
+}
+```
+
+#### Start Scheduler Example
+
+```bash
+curl --location --request POST 'http://localhost:3000/api/scheduler/start' \
+--header 'Authorization: Bearer YOUR_JWT_TOKEN'
+```
+
+**Response:**
+
+```json
+{
+    "status": true,
+    "message": "Scheduler started successfully",
+    "data": {
+        "running": true,
+        "isProcessing": false,
+        "config": {
+            "enabled": true,
+            "batch_size": 5,
+            "interval_minutes": 30,
+            ...
+        }
+    }
+}
+```
+
+#### Stop Scheduler Example
+
+```bash
+curl --location --request POST 'http://localhost:3000/api/scheduler/stop' \
+--header 'Authorization: Bearer YOUR_JWT_TOKEN'
+```
+
+**Response:**
+
+```json
+{
+    "status": true,
+    "message": "Scheduler stopped successfully",
+    "data": {
+        "running": false,
+        "isProcessing": false,
+        "config": { ... }
+    }
 }
 ```
 

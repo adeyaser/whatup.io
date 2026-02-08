@@ -205,11 +205,35 @@ const getSchedulerStatus = () => ({
     config: currentConfig
 });
 
+// Start scheduler manually (from API)
+const startSchedulerManually = async () => {
+    if (schedulerInterval) {
+        return { success: false, message: 'Scheduler is already running' };
+    }
+
+    await startScheduler();
+    return { success: true, message: 'Scheduler started successfully' };
+};
+
+// Stop scheduler manually (from API)
+const stopSchedulerManually = () => {
+    if (!schedulerInterval) {
+        return { success: false, message: 'Scheduler is not running' };
+    }
+
+    stopScheduler();
+    return { success: true, message: 'Scheduler stopped successfully' };
+};
+
+
 module.exports = {
     startScheduler,
     stopScheduler,
     processFailedMessages,
     getSchedulerStatus,
     loadSettings,
-    updateSettings
+    updateSettings,
+    startSchedulerManually,
+    stopSchedulerManually
 };
+

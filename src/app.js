@@ -10,6 +10,7 @@ const { startScheduler, getSchedulerStatus } = require('./services/messageSchedu
 const apiRoutes = require('./routes/api');
 const authRoutes = require('./routes/auth');
 const groupRoutes = require('./routes/groups');
+const usersRoutes = require('./routes/users');
 const authenticateToken = require('./middleware/auth');
 
 const app = express();
@@ -60,6 +61,7 @@ app.get('/wa_gateway.postman_collection.json', (req, res) => {
 app.use('/auth', authRoutes);
 app.use('/api', authenticateToken, apiRoutes); // Protect API
 app.use('/api/groups', authenticateToken, groupRoutes); // Group Management
+app.use('/api/users', authenticateToken, usersRoutes); // User Management
 
 // Device Management Routes (Protected)
 app.post('/api/device/add', authenticateToken, async (req, res) => {
@@ -139,8 +141,17 @@ io.on('connection', (socket) => {
 // Initialize WhatsApp (Loads all devices)
 initWhatsApp(io).then(() => {
     // Start message retry scheduler after WhatsApp is initialized
-    startScheduler();
+    // Check if scheduler is enabled in environment
+    const schedulerEnabled = process.env.SCHEDULER_ENABLED === 'true';
+
+    if (schedulerEnabled) {
+        console.log('[App] Auto-starting scheduler (SCHEDULER_ENABLED=true)');
+        startScheduler();
+    } else {
+        console.log('[App] Scheduler auto-start disabled (SCHEDULER_ENABLED=false). Use API to start manually.');
+    }
 }).catch(err => console.error('Failed to initialize WhatsApp:', err));
+
 
 const PORT = process.env.PORT || 3000;
 const NODE_ENV = process.env.NODE_ENV || 'development';

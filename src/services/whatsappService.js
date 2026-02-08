@@ -49,7 +49,89 @@ const sessions = new Map();
 const pendingSessions = new Set(); // Track devices currently initiating
 const reconnectAttempts = new Map(); // Track reconnection attempts for backoff
 const reconnectingSessions = new Set(); // Track devices currently waiting to reconnect
+const qrTimeouts = new Map(); // Track QR code timeout timers
 let io;
+
+// Get QR scan timeout from environment (default 60 seconds)
+const getQRScanTimeout = () => {
+    const timeout = parseInt(process.env.QR_SCAN_TIMEOUT || '60', 10);
+    return timeout * 1000; // Convert to milliseconds
+};
+
+// Clear QR timeout for a device
+const clearQRTimeout = (deviceId) => {
+    const timer = qrTimeouts.get(deviceId);
+    if (timer) {
+        clearTimeout(timer);
+        qrTimeouts.delete(deviceId);
+        console.log(`[${deviceId}] QR timeout cleared`);
+    }
+};
+
+// Set QR timeout for auto-delete
+const setQRTimeout = (deviceId) => {
+    // Clear existing timeout first
+    clearQRTimeout(deviceId);
+
+    const timeoutMs = getQRScanTimeout();
+    const timeoutSeconds = timeoutMs / 1000;
+
+    console.log(`[${deviceId}] ⏰ QR timeout set: ${timeoutSeconds} seconds`);
+
+    const timer = setTimeout(async () => {
+        console.log(`[${deviceId}] ⏰ QR scan timeout reached! Checking if device should be deleted...`);
+
+        try {
+            // Check if device exists and get its status
+            const [deviceRows] = await pool.query('SELECT status, created_at FROM devices WHERE device_id = ?', [deviceId]);
+
+            if (deviceRows.length === 0) {
+                console.log(`[${deviceId}] Device not found in database, skipping auto-delete`);
+                return;
+            }
+
+            const device = deviceRows[0];
+
+            // Check if device has ever connected before (has session data)
+            const [sessionRows] = await pool.query(
+                'SELECT COUNT(*) as count FROM wa_sessions WHERE id LIKE ?',
+                [`${deviceId}_%`]
+            );
+
+            const hasSessionData = sessionRows[0].count > 0;
+
+            if (hasSessionData) {
+                console.log(`[${deviceId}] ⚠️ Device has previous session data, skipping auto-delete (device was connected before)`);
+                return;
+            }
+
+            // Only delete NEW devices (no previous session data) that are still scanning
+            if (device.status === 'scanning') {
+                console.log(`[${deviceId}] ❌ Device is NEW and QR not scanned, proceeding with auto-delete...`);
+                await deleteDevice(deviceId);
+
+                // Emit event to frontend
+                if (io) {
+                    io.emit('qr_timeout', {
+                        deviceId,
+                        message: `Device ${deviceId} deleted: QR code not scanned within ${timeoutSeconds} seconds`
+                    });
+                }
+
+                console.log(`[${deviceId}] ✅ Device auto-deleted due to QR timeout`);
+            } else {
+                console.log(`[${deviceId}] Device no longer in scanning state (${device.status}), skipping auto-delete`);
+            }
+        } catch (error) {
+            console.error(`[${deviceId}] Error during QR timeout auto-delete:`, error);
+        }
+
+        qrTimeouts.delete(deviceId);
+    }, timeoutMs);
+
+    qrTimeouts.set(deviceId, timer);
+};
+
 
 // Suppress libsignal MAC errors (suppress repetitive error logs)
 const originalConsoleError = console.error;
@@ -176,10 +258,14 @@ const startSession = async (deviceId) => {
                     try {
                         await pool.query('UPDATE devices SET status = ? WHERE device_id = ?', ['scanning', deviceId]);
                         if (io) io.emit('device_status', { deviceId, status: 'scanning' });
+
+                        // Set QR timeout for auto-delete
+                        setQRTimeout(deviceId);
                     } catch (err) {
                         console.error('Error updating device status:', err);
                     }
                 }
+
 
                 if (connection === 'close') {
                     const statusCode = (lastDisconnect?.error instanceof Boom)?.output?.statusCode || lastDisconnect?.error?.output?.statusCode;
@@ -259,6 +345,7 @@ const startSession = async (deviceId) => {
                 else if (connection === 'open') {
                     console.log(`[${deviceId}] ✅ Connection opened`);
                     reconnectAttempts.delete(deviceId); // Reset backoff on success
+                    clearQRTimeout(deviceId); // Clear QR timeout since device is now connected
                     sock.isReady = true; // Mark as ready for sending
                     const user = sock.user;
                     try {
@@ -268,6 +355,7 @@ const startSession = async (deviceId) => {
                     } catch (err) {
                         console.error('Error updating device status:', err);
                     }
+
                 } else if (connection === 'connecting') {
                     console.log(`[${deviceId}] ⏳ Connecting...`);
                     sock.isReady = false;
@@ -336,6 +424,7 @@ const deleteDevice = async (deviceId) => {
         reconnectAttempts.delete(deviceId);
         reconnectingSessions.delete(deviceId);
         pendingSessions.delete(deviceId);
+        clearQRTimeout(deviceId); // Clear QR timeout if exists
 
         // Clean up DB
         await pool.query('DELETE FROM devices WHERE device_id = ?', [deviceId]);
@@ -346,6 +435,7 @@ const deleteDevice = async (deviceId) => {
     } catch (e) {
         console.error('Error deleting device:', e);
         return false;
+
     }
 };
 

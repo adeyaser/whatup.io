@@ -28,3 +28,8 @@ Thumbs.db
 dist/
 build/
 
+
+# Archives
+*.zip
+*.rar
+*.tar.gz

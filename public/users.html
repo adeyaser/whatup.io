@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management - WA Gateway</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --danger: #ef4444;
+            --success: #10b981;
+            --bg: #f8fafc;
+            --text: #1e293b;
+            --gray: #64748b;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: white;
+            /* Clean background for iframe integration */
+            color: var(--text);
+            margin: 0;
+            padding: 1rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #f1f5f9;
+        }
+
+        .header h2 {
+            margin: 0;
+            font-size: 1.25rem;
+            color: var(--text);
+        }
+
+        .btn {
+            border: none;
+            border-radius: 6px;
+            padding: 0.5rem 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 8px -1px rgba(102, 126, 234, 0.5);
+        }
+
+        .btn-danger {
+            background: #fee2e2;
+            color: var(--danger);
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-icon {
+            padding: 0.4rem;
+            background: #f1f5f9;
+            border-radius: 4px;
+            color: var(--gray);
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-icon:hover {
+            background: #e2e8f0;
+            color: var(--primary);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        th {
+            text-align: left;
+            padding: 0.75rem 1rem;
+            background: #f8fafc;
+            color: var(--gray);
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.9rem;
+        }
+
+        tr:hover td {
+            background: #f8fafc;
+        }
+
+        .badge {
+            background: #f59e0b;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+
+        .api-key {
+            font-family: monospace;
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: var(--gray);
+            font-size: 0.8rem;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(2px);
+        }
+
+        .modal {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            padding: 1.25rem;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--gray);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.6rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            box-sizing: border-box;
+            /* Fix width overflow */
+            transition: border-color 0.2s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .modal-footer {
+            padding: 1.25rem;
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.75rem;
+            border-radius: 0 0 12px 12px;
+        }
+
+        /* Toggle Password Eye */
+        .password-input-group {
+            position: relative;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--gray);
+        }
+
+        .blur-text {
+            filter: blur(4px);
+            transition: filter 0.3s;
+            cursor: pointer;
+        }
+
+        .blur-text:hover {
+            filter: blur(0);
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header" id="page-header">
+        <h2>👤 User Management</h2>
+        <button class="btn btn-primary" onclick="openAddModal()">
+            <span>+</span> Add New User
+        </button>
+    </div>
+
+    <div id="loading" style="text-align: center; padding: 2rem; color: var(--gray);">
+        Loading users...
+    </div>
+
+    <div id="table-container" style="display: none; overflow-x: auto; border-radius: 8px; border: 1px solid #e2e8f0;">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>User</th>
+                    <th>Password</th>
+                    <th>API Key</th>
+                    <th>Created</th>
+                    <th style="text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="users-tbody">
+                <!-- Rows injected by JS -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ADD/EDIT USER MODAL -->
+    <div id="userModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modalTitle">Add New User</h3>
+                <button class="btn-icon" onclick="closeModal('userModal')">✕</button>
+            </div>
+            <form id="userForm" onsubmit="handleUserSubmit(event)">
+                <div class="modal-body">
+                    <input type="hidden" id="userId">
+                    <div class="form-group">
+                        <label>Username</label>
+                        <input type="text" id="username" class="form-control" required placeholder="Enter username">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <div class="password-input-group">
+                            <input type="text" id="password" class="form-control" placeholder="Enter password">
+                        </div>
+                        <small style="color: var(--gray); font-size: 0.75rem;">Leave blank to keep current (editing
+                            only).</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn" style="background: white; border: 1px solid #cbd5e1;"
+                        onclick="closeModal('userModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- DETAIL MODAL -->
+    <div id="detailModal" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>User Details</h3>
+                <button class="btn-icon" onclick="closeModal('detailModal')">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Username</label>
+                    <div class="form-control" style="background: #f1f5f9;" id="detailUsername"></div>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <div style="display: flex; gap: 8px;">
+                        <div class="form-control blur-text" style="background: #f1f5f9; cursor: pointer;"
+                            id="detailPassword" onclick="this.classList.toggle('blur-text')" title="Click to show/hide">
+                        </div>
+                        <button class="btn-icon" onclick="copyToClipboard('detailPassword')" title="Copy">📋</button>
+                    </div>
+                    <small style="color: var(--danger); font-size: 0.7rem;">* Click text to reveal</small>
+                </div>
+                <div class="form-group">
+                    <label>API Key</label>
+                    <div style="display: flex; gap: 8px;">
+                        <div class="form-control api-key" style="font-size: 0.9rem;" id="detailApiKey"></div>
+                        <button class="btn-icon" onclick="copyToClipboard('detailApiKey')" title="Copy">📋</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Created At</label>
+                    <div id="detailCreated" style="font-size: 0.9rem; color: var(--gray);"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn" style="background: white; border: 1px solid #cbd5e1;"
+                    onclick="closeModal('detailModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = window.location.origin + '/api/users';
+        const token = localStorage.getItem('token');
+
+        // Check if embedded in iframe to adjust styles if needed
+        if (window.self !== window.top) {
+            // Optional: Hide specific elements if needed when embedded
+            // document.getElementById('page-header').style.display = 'none';
+        }
+
+        async function loadUsers() {
+            if (!token) {
+                document.getElementById('loading').innerHTML = `
+                    <p style="color: var(--danger)">Not authenticated.</p>
+                    <button class="btn btn-primary" onclick="window.parent.location.href='login.html'">Login</button>
+                `;
+                return;
+            }
+
+            try {
+                const res = await fetch(API_URL, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!res.ok) throw new Error(res.statusText);
+
+                const data = await res.json();
+                renderTable(data.data);
+            } catch (err) {
+                document.getElementById('loading').textContent = 'Error: ' + err.message;
+            }
+        }
+
+        function renderTable(users) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('table-container').style.display = 'block';
+
+            const tbody = document.getElementById('users-tbody');
+            tbody.innerHTML = users.map(user => `
+                <tr>
+                    <td>${user.id}</td>
+                    <td>
+                        <strong>${user.username}</strong>
+                        ${user.username === 'admin' ? '<span class="badge">ADMIN</span>' : ''}
+                    </td>
+                    <td>
+                        <span style="color: var(--gray); cursor: help;" title="See details">•••••••</span>
+                    </td>
+                    <td><span class="api-key">${user.api_key.substring(0, 12)}...</span></td>
+                    <td>${new Date(user.created_at).toLocaleDateString()}</td>
+                    <td style="text-align: right;">
+                        <button class="btn-icon" onclick='openDetailModal(${JSON.stringify(user)})' title="View Details">👁️</button>
+                        <button class="btn-icon" onclick='openEditModal(${JSON.stringify(user)})' title="Edit">✏️</button>
+                        ${user.username !== 'admin' ?
+                    `<button class="btn-icon" style="color: var(--danger)" onclick="deleteUser(${user.id}, '${user.username}')" title="Delete">🗑️</button>` :
+                    `<button class="btn-icon" disabled style="opacity: 0.3; cursor: not-allowed;">🗑️</button>`
+                }
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // --- ADD / EDIT LOGIC ---
+
+        function openAddModal() {
+            document.getElementById('modalTitle').textContent = 'Add New User';
+            document.getElementById('userId').value = '';
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('userModal').style.display = 'flex';
+        }
+
+        function openEditModal(user) {
+            document.getElementById('modalTitle').textContent = 'Edit User';
+            document.getElementById('userId').value = user.id;
+            document.getElementById('username').value = user.username;
+            document.getElementById('password').value = ''; // Don't show password here
+            document.getElementById('password').placeholder = 'Leave blank to keep current password';
+            document.getElementById('userModal').style.display = 'flex';
+        }
+
+        async function handleUserSubmit(e) {
+            e.preventDefault();
+            const id = document.getElementById('userId').value;
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `${API_URL}/${id}` : API_URL;
+            const body = { username };
+
+            if (password) body.password = password;
+            if (!id && !password) {
+                alert('Password is required for new users!');
+                return;
+            }
+
+            try {
+                const res = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                const data = await res.json();
+
+                if (data.status) {
+                    closeModal('userModal');
+                    loadUsers(); // Refresh table
+                    alert(id ? 'User updated!' : 'User created!');
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (err) {
+                alert('Request failed: ' + err.message);
+            }
+        }
+
+        function deleteUser(id, name) {
+            if (!confirm(`Delete user "${name}"?`)) return;
+
+            fetch(`${API_URL}/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status) loadUsers();
+                    else alert('Failed: ' + data.message);
+                })
+                .catch(err => alert('Error: ' + err.message));
+        }
+
+        // --- DETAIL MODAL LOGIC ---
+
+        async function openDetailModal(user) {
+            // Fetch fresh data to ensure we have the password (if API didn't return it in list)
+            // Note: Our modified API returns password in list, but let's be safe
+            document.getElementById('detailUsername').textContent = user.username;
+            document.getElementById('detailPassword').textContent = user.password || '(Thinking...)';
+            document.getElementById('detailApiKey').textContent = user.api_key;
+            document.getElementById('detailCreated').textContent = new Date(user.created_at).toLocaleString();
+
+            document.getElementById('detailModal').style.display = 'flex';
+        }
+
+        // --- UTILS ---
+
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        function copyToClipboard(elementId) {
+            const text = document.getElementById(elementId).textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Copied!');
+            });
+        }
+
+        // Init
+        loadUsers();
+    </script>
+</body>
+
+</html>

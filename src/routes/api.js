@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { sendMessage } = require('../services/whatsappService');
-const { getSchedulerStatus, updateSettings, processFailedMessages } = require('../services/messageScheduler');
+const { getSchedulerStatus, updateSettings, processFailedMessages, startSchedulerManually, stopSchedulerManually } = require('../services/messageScheduler');
+
 
 router.post('/send-message', async (req, res) => {
     const { deviceId, number, message } = req.body;
@@ -91,6 +92,35 @@ router.post('/scheduler/trigger', async (req, res) => {
         res.status(500).json({ status: false, message: error.message });
     }
 });
+
+// Start scheduler manually
+router.post('/scheduler/start', async (req, res) => {
+    try {
+        const result = await startSchedulerManually();
+        if (result.success) {
+            res.json({ status: true, message: result.message, data: getSchedulerStatus() });
+        } else {
+            res.status(400).json({ status: false, message: result.message });
+        }
+    } catch (error) {
+        res.status(500).json({ status: false, message: error.message });
+    }
+});
+
+// Stop scheduler manually
+router.post('/scheduler/stop', async (req, res) => {
+    try {
+        const result = stopSchedulerManually();
+        if (result.success) {
+            res.json({ status: true, message: result.message, data: getSchedulerStatus() });
+        } else {
+            res.status(400).json({ status: false, message: result.message });
+        }
+    } catch (error) {
+        res.status(500).json({ status: false, message: error.message });
+    }
+});
+
 
 module.exports = router;
 
