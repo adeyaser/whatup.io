@@ -821,13 +821,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Sidebar Functions
     function toggleSidebar() {
-        sidebar?.classList.toggle('show');
-        sidebarOverlay?.classList.toggle('show');
+        sidebar?.classList.toggle('open');
+        sidebarOverlay?.classList.toggle('active');
     }
 
     function closeSidebar() {
-        sidebar?.classList.remove('show');
-        sidebarOverlay?.classList.remove('show');
+        sidebar?.classList.remove('open');
+        sidebarOverlay?.classList.remove('active');
     }
 
     // Toggle Listeners

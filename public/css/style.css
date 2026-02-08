@@ -4,12 +4,17 @@
 
 :root {
     /* Professional Office Colors */
-    --office-primary: #1e3a8a;        /* Deep Professional Blue */
-    --office-primary-light: #3b82f6;  /* Bright Blue */
-    --office-primary-dark: #1e40af;   /* Dark Blue */
-    --office-accent: #0ea5e9;         /* Sky Blue Accent */
-    --office-secondary: #64748b;      /* Slate Gray */
-    
+    --office-primary: #1e3a8a;
+    /* Deep Professional Blue */
+    --office-primary-light: #3b82f6;
+    /* Bright Blue */
+    --office-primary-dark: #1e40af;
+    /* Dark Blue */
+    --office-accent: #0ea5e9;
+    /* Sky Blue Accent */
+    --office-secondary: #64748b;
+    /* Slate Gray */
+
     /* Neutral Professional Palette */
     --office-white: #ffffff;
     --office-gray-50: #f8fafc;
@@ -22,18 +27,18 @@
     --office-gray-700: #334155;
     --office-gray-800: #1e293b;
     --office-gray-900: #0f172a;
-    
+
     /* Status Colors */
     --office-success: #10b981;
     --office-warning: #f59e0b;
     --office-error: #ef4444;
     --office-info: #3b82f6;
-    
+
     /* Gradients */
     --gradient-office: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
     --gradient-light: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
     --gradient-card: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-    
+
     /* Spacing */
     --space-xs: 0.25rem;
     --space-sm: 0.5rem;
@@ -42,7 +47,7 @@
     --space-xl: 2rem;
     --space-2xl: 3rem;
     --space-3xl: 4rem;
-    
+
     /* Border Radius */
     --radius-sm: 4px;
     --radius-md: 8px;
@@ -50,7 +55,7 @@
     --radius-xl: 16px;
     --radius-2xl: 24px;
     --radius-full: 9999px;
-    
+
     /* Shadows - Professional & Subtle */
     --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
@@ -58,12 +63,12 @@
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
     --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
     --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-    
+
     /* Transitions */
     --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
     --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
     --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
-    
+
     /* Typography */
     --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     --font-mono: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
@@ -266,9 +271,12 @@ body {
 }
 
 @keyframes pulse {
-    0%, 100% {
+
+    0%,
+    100% {
         opacity: 1;
     }
+
     50% {
         opacity: 0.5;
     }
@@ -301,6 +309,7 @@ body {
         opacity: 0;
         transform: translateY(8px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -638,6 +647,7 @@ tbody tr:hover {
     from {
         opacity: 0;
     }
+
     to {
         opacity: 1;
     }
@@ -789,6 +799,7 @@ tbody tr:hover {
         transform: translateX(100%);
         opacity: 0;
     }
+
     to {
         transform: translateX(0);
         opacity: 1;
@@ -844,7 +855,7 @@ tbody tr:hover {
     right: 0;
     bottom: 0;
     background: rgba(0, 0, 0, 0.5);
-    z-index: 99;
+    z-index: 1090;
 }
 
 @media (max-width: 768px) {
@@ -862,7 +873,7 @@ tbody tr:hover {
         top: 0;
         bottom: 0;
         transition: left var(--transition-base);
-        z-index: 100;
+        z-index: 1100;
     }
 
     .sidebar.open {
