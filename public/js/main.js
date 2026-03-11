@@ -815,6 +815,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const mTypeSelect = document.getElementById('msg-type');
     const uGrp = document.getElementById('url-group');
     const mUrlInput = document.getElementById('media-url');
+    const mFileInput = document.getElementById('media-file');
+    const uploadStatus = document.getElementById('upload-status');
     const sendBtn = messageForm ? messageForm.querySelector('button[type="submit"]') : null;
 
     console.log('App Initialization started...');
@@ -922,10 +924,45 @@ document.addEventListener('DOMContentLoaded', () => {
         handleMessageTypeChange(); // Initial state
     }
 
+    if (mFileInput) {
+        mFileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) {
+                mUrlInput.value = '';
+                uploadStatus.style.display = 'none';
+                return;
+            }
+
+            // Show uploading state
+            uploadStatus.textContent = 'Uploading file, please wait...';
+            uploadStatus.style.color = '#eab308';
+            uploadStatus.style.display = 'block';
+            mUrlInput.value = '';
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const res = await axios.post('/api/upload', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                if (res.data.status) {
+                    mUrlInput.value = res.data.url;
+                    uploadStatus.textContent = `File uploaded: ${file.name}`;
+                    uploadStatus.style.color = '#0d7a3e';
+                }
+            } catch (err) {
+                console.error('File upload failed', err);
+                uploadStatus.textContent = 'Upload failed: ' + (err.response?.data?.message || err.message);
+                uploadStatus.style.color = '#ef4444';
+            }
+        });
+    }
+
     if (messageForm) {
         messageForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (!currentDeviceId) return alert('Please select a device first!');
+            if (!currentDeviceId) return Swal.fire('Error', 'Please select a device first!', 'error');
 
             const isGroup = recTypeSelect.value === 'group';
             const type = mTypeSelect.value;
@@ -942,10 +979,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isGroup) {
                 endpoint = '/api/groups/send-bulk';
                 payload.groupId = grSelect.value;
-                if (!payload.groupId) return alert('Please select a contact group');
+                if (!payload.groupId) return Swal.fire('Warning', 'Please select a contact group', 'warning');
             } else {
                 payload.number = phInput.value;
-                if (!payload.number) return alert('Please enter a phone number');
+                if (!payload.number) return Swal.fire('Warning', 'Please enter a phone number', 'warning');
                 if (type !== 'text') endpoint = '/api/send-media';
             }
 
@@ -955,10 +992,37 @@ document.addEventListener('DOMContentLoaded', () => {
                 payload.caption = message;
             }
 
+            // Show loading state
+            Swal.fire({
+                title: 'Sending...',
+                text: 'Please wait while we process your message.',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
             try {
                 const res = await axios.post(endpoint, payload);
                 if (res.data.status) {
-                    alert(isGroup ? 'Bulk sending started in background!' : 'Message Sent!');
+                    if (isGroup) {
+                        Swal.fire({
+                            title: 'Bulk Send Started',
+                            text: 'Your bulk messages are being processed in the background.',
+                            icon: 'info',
+                            confirmButtonColor: '#25d366'
+                        });
+                    } else {
+                        Swal.fire({
+                            title: 'Berhasil Terkirim!',
+                            text: 'Pesan berhasil dikirim ke nomor tujuan.',
+                            icon: 'success',
+                            confirmButtonColor: '#25d366',
+                            timer: 3000,
+                            timerProgressBar: true
+                        });
+                    }
+
                     if (!isGroup) {
                         addLogEntry({
                             deviceId: currentDeviceId,
@@ -972,11 +1036,18 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
                     messageForm.reset();
+                    if (uploadStatus) uploadStatus.style.display = 'none';
+                    if (mFileInput) mFileInput.value = '';
                     handleRecipientTypeChange();
                     handleMessageTypeChange();
                 }
             } catch (err) {
-                alert('Failed to send: ' + (err.response?.data?.message || err.message));
+                Swal.fire({
+                    title: 'Sending Failed',
+                    text: err.response?.data?.message || err.message,
+                    icon: 'error',
+                    confirmButtonColor: '#ef4444'
+                });
             }
         });
     }

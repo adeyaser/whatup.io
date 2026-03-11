@@ -5,57 +5,711 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - WA Gateway</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
     <style>
+        :root {
+            --primary: #25d366;
+            --primary-hover: #1ebe57;
+            --bg-color: #0a1628;
+            --card-bg: rgba(15, 30, 50, 0.75);
+            --text-main: #f0fdf4;
+            --text-muted: #86efac;
+            --input-bg: rgba(10, 22, 40, 0.7);
+            --border-color: rgba(37, 211, 102, 0.15);
+            --accent-pink: #f472b6;
+            --accent-teal: #2dd4bf;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+        }
+
         body {
             display: flex;
             justify-content: center;
             align-items: center;
-            background: #f1f5f9;
+            min-height: 100vh;
+            background: var(--bg-color);
+            background-image:
+                radial-gradient(ellipse at 20% 80%, rgba(37, 211, 102, 0.12), transparent 40%),
+                radial-gradient(ellipse at 80% 20%, rgba(244, 114, 182, 0.1), transparent 40%),
+                radial-gradient(ellipse at 50% 50%, rgba(45, 212, 191, 0.06), transparent 50%);
+            position: relative;
+            overflow: hidden;
+            margin: 0;
+        }
+
+        /* Animated background blobs */
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(90px);
+            z-index: 0;
+            animation: float 12s infinite alternate;
+        }
+
+        .blob-1 {
+            width: 450px;
+            height: 450px;
+            background: rgba(37, 211, 102, 0.2);
+            top: -120px;
+            left: -120px;
+            animation-delay: 0s;
+        }
+
+        .blob-2 {
+            width: 350px;
+            height: 350px;
+            background: rgba(244, 114, 182, 0.15);
+            bottom: -80px;
+            right: -80px;
+            animation-delay: -6s;
+        }
+
+        .blob-3 {
+            width: 250px;
+            height: 250px;
+            background: rgba(45, 212, 191, 0.12);
+            top: 40%;
+            right: 10%;
+            animation-delay: -3s;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            100% {
+                transform: translate(30px, 30px) scale(1.1);
+            }
+        }
+
+        .login-wrapper {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 420px;
+            padding: 20px;
         }
 
         .login-card {
-            background: white;
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-            width: 100%;
-            max-width: 400px;
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            padding: 2.5rem;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .login-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.6);
+        }
+
+        .logo-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .logo-icon {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #25d366, #2dd4bf);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 28px;
+            box-shadow: 0 12px 24px rgba(37, 211, 102, 0.4);
+            transform: rotate(-5deg);
+            position: relative;
+        }
+
+        .logo-icon::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            right: -4px;
+            width: 22px;
+            height: 22px;
+            background: linear-gradient(135deg, #f472b6, #fb7185);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--bg-color);
         }
 
         .login-header {
             text-align: center;
-            margin-bottom: 2rem;
+            margin-bottom: 2.5rem;
         }
 
         .login-header h2 {
-            color: #4f46e5;
+            color: var(--text-main);
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
+        }
+
+        .login-header p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .form-group input:focus+label {
+            color: var(--primary);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-main);
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+            background: rgba(15, 23, 42, 0.8);
+        }
+
+        /* Modern Canvas Captcha */
+        .captcha-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .captcha-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .captcha-label svg {
+            width: 16px;
+            height: 16px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+        }
+
+        .captcha-visual {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .captcha-canvas-wrapper {
+            position: relative;
+            border-radius: 14px;
+            overflow: hidden;
+            flex: 1;
+            box-shadow:
+                0 0 0 1px rgba(168, 85, 247, 0.3),
+                0 8px 24px rgba(0, 0, 0, 0.25),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            animation: captchaGlow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes captchaGlow {
+            0% {
+                box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.3), 0 8px 24px rgba(0, 0, 0, 0.25), 0 0 15px rgba(99, 102, 241, 0.1);
+            }
+
+            100% {
+                box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.5), 0 8px 24px rgba(0, 0, 0, 0.25), 0 0 25px rgba(168, 85, 247, 0.15);
+            }
+        }
+
+        #captcha-canvas {
+            display: block;
+            width: 100%;
+            height: 60px;
+            cursor: not-allowed;
+        }
+
+        .captcha-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .refresh-captcha {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95));
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            color: var(--text-muted);
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+        }
+
+        .refresh-captcha:hover {
+            color: #a855f7;
+            border-color: #a855f7;
+            transform: rotate(180deg) scale(1.1);
+            box-shadow: 0 4px 20px rgba(168, 85, 247, 0.35);
+        }
+
+        .refresh-captcha svg {
+            width: 20px;
+            height: 20px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .captcha-input-row {
+            position: relative;
+        }
+
+        .captcha-input-row input {
+            width: 100%;
+            padding: 0.8rem 1rem 0.8rem 42px;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-main);
+            font-size: 1.1rem;
+            font-weight: 600;
+            letter-spacing: 4px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .captcha-input-row input:focus {
+            border-color: #a855f7;
+            box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.2);
+            background: rgba(15, 23, 42, 0.8);
+        }
+
+        .captcha-input-row input::placeholder {
+            letter-spacing: 1px;
+            font-weight: 400;
+            font-size: 0.9rem;
+        }
+
+        .captcha-input-row svg {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            fill: none;
+            stroke: var(--text-muted);
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            pointer-events: none;
+            transition: stroke 0.3s;
+        }
+
+        .captcha-input-row input:focus~svg {
+            stroke: #a855f7;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 0.9rem;
+            background: linear-gradient(135deg, #25d366, #2dd4bf);
+            color: #0a1628;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4);
+            margin-top: 1rem;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(37, 211, 102, 0.5);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        #error-msg {
+            color: #ef4444;
+            font-size: 0.85rem;
+            margin-top: 1rem;
+            text-align: center;
+            display: none;
+            padding: 0.75rem;
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: 8px;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-5px);
+            }
+
+            50% {
+                transform: translateX(5px);
+            }
+
+            75% {
+                transform: translateX(-5px);
+            }
+        }
+
+        /* Floating themed icons */
+        .floating-icons {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .floating-icon {
+            position: absolute;
+            opacity: 0;
+            animation: icon-drift linear infinite;
+        }
+
+        .floating-icon svg {
+            fill: none;
+            stroke-width: 1.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        @keyframes icon-drift {
+            0% {
+                transform: translateY(110vh) rotate(0deg) scale(0.6);
+                opacity: 0;
+            }
+
+            10% {
+                opacity: 0.15;
+            }
+
+            90% {
+                opacity: 0.15;
+            }
+
+            100% {
+                transform: translateY(-10vh) rotate(360deg) scale(1);
+                opacity: 0;
+            }
+        }
+
+        /* Input icons wrapper */
+        .input-icon-wrapper {
+            position: relative;
+        }
+
+        .input-icon-wrapper svg {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            fill: none;
+            stroke: var(--text-muted);
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transition: stroke 0.3s;
+            pointer-events: none;
+        }
+
+        .input-icon-wrapper input {
+            padding-left: 42px;
+        }
+
+        .input-icon-wrapper input:focus+svg {
+            stroke: var(--primary);
         }
     </style>
 </head>
 
 <body>
-    <div class="login-card">
-        <div class="login-header">
-            <h2>WA Gateway</h2>
-            <p>Sign in to your account</p>
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+
+    <div class="floating-icons" id="floating-icons"></div>
+
+    <div class="login-wrapper">
+        <div class="login-card">
+            <div class="logo-container">
+                <div class="logo-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path
+                            d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z">
+                        </path>
+                    </svg>
+                </div>
+            </div>
+            <div class="login-header">
+                <h2>Pesan untuk Kebaikan</h2>
+                <p>Masuk ke Dashboard WA Pesan Untuk Kebaikan</p>
+            </div>
+
+            <form id="login-form">
+                <div class="form-group">
+                    <label>Username</label>
+                    <div class="input-icon-wrapper">
+                        <input type="text" id="username" placeholder="Enter your username" required>
+                        <svg viewBox="0 0 24 24">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Password</label>
+                    <div class="input-icon-wrapper">
+                        <input type="password" id="password" placeholder="••••••••" required>
+                        <svg viewBox="0 0 24 24">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="captcha-section">
+                    <div class="captcha-label">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>
+                        Security Verification
+                    </div>
+                    <div class="captcha-visual">
+                        <div class="captcha-canvas-wrapper">
+                            <canvas id="captcha-canvas" width="240" height="60"></canvas>
+                        </div>
+                        <div class="captcha-actions">
+                            <button type="button" class="refresh-captcha" id="refresh-captcha"
+                                title="Generate new captcha">
+                                <svg viewBox="0 0 24 24">
+                                    <polyline points="1 4 1 10 7 10"></polyline>
+                                    <polyline points="23 20 23 14 17 14"></polyline>
+                                    <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15">
+                                    </path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="captcha-input-row">
+                        <input type="text" id="captcha-input" placeholder="Type the characters above" required
+                            autocomplete="off">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-primary">Sign In</button>
+                <div id="error-msg"></div>
+            </form>
         </div>
-        <form id="login-form">
-            <div class="form-group">
-                <label>Username</label>
-                <input type="text" id="username" required>
-            </div>
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" id="password" required>
-            </div>
-            <button type="submit" class="btn-primary">Sign In</button>
-            <div id="error-msg" style="color: red; margin-top: 1rem; text-align: center display: none;"></div>
-        </form>
     </div>
+
+
+
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="js/login.js"></script>
+    <script>
+        // ===== Floating Themed Icons (Pengiriman Pesan & Yayasan Sosial) =====
+        const floatingContainer = document.getElementById('floating-icons');
+        const iconDefs = [
+            // Chat bubble
+            `<svg width="SIZE" height="SIZE" viewBox="0 0 24 24" stroke="COLOR"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>`,
+            // Send / paper plane
+            `<svg width="SIZE" height="SIZE" viewBox="0 0 24 24" stroke="COLOR"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>`,
+            // Heart
+            `<svg width="SIZE" height="SIZE" viewBox="0 0 24 24" stroke="COLOR"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>`,
+            // People / users
+            `<svg width="SIZE" height="SIZE" viewBox="0 0 24 24" stroke="COLOR"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>`,
+            // Mail / envelope
+            `<svg width="SIZE" height="SIZE" viewBox="0 0 24 24" stroke="COLOR"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>`,
+            // Helping hand
+            `<svg width="SIZE" height="SIZE" viewBox="0 0 24 24" stroke="COLOR"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>`,
+            // Globe / world
+            `<svg width="SIZE" height="SIZE" viewBox="0 0 24 24" stroke="COLOR"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>`,
+            // Phone
+            `<svg width="SIZE" height="SIZE" viewBox="0 0 24 24" stroke="COLOR"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>`,
+            // Star
+            `<svg width="SIZE" height="SIZE" viewBox="0 0 24 24" stroke="COLOR"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>`,
+            // Message circle (WhatsApp-style)
+            `<svg width="SIZE" height="SIZE" viewBox="0 0 24 24" stroke="COLOR"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>`,
+        ];
+
+        const iconColors = ['#25d366', '#2dd4bf', '#86efac', '#f472b6', '#fb7185', '#a78bfa', '#67e8f9', '#fbbf24'];
+
+        for (let i = 0; i < 18; i++) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'floating-icon';
+            const size = Math.random() * 16 + 20;
+            const color = iconColors[Math.floor(Math.random() * iconColors.length)];
+            let svgHtml = iconDefs[Math.floor(Math.random() * iconDefs.length)];
+            svgHtml = svgHtml.replace(/SIZE/g, size).replace(/COLOR/g, color);
+            wrapper.innerHTML = svgHtml;
+            wrapper.style.left = Math.random() * 100 + 'vw';
+            wrapper.style.animationDuration = (Math.random() * 15 + 15) + 's';
+            wrapper.style.animationDelay = (Math.random() * 10) + 's';
+            floatingContainer.appendChild(wrapper);
+        }
+
+        // ===== Modern Canvas Captcha =====
+        const canvas = document.getElementById('captcha-canvas');
+        const ctx = canvas.getContext('2d');
+
+        function drawCaptcha() {
+            const W = canvas.width;
+            const H = canvas.height;
+
+            // Generate 5 random alphanumeric chars (no ambiguous ones)
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let code = '';
+            for (let i = 0; i < 5; i++) code += chars[Math.floor(Math.random() * chars.length)];
+
+            // Store code globally so login.js can read it
+            window.__captchaCode = code;
+
+            // Dark gradient background
+            const grad = ctx.createLinearGradient(0, 0, W, H);
+            grad.addColorStop(0, '#1e1b4b');
+            grad.addColorStop(0.5, '#312e81');
+            grad.addColorStop(1, '#1e1b4b');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+
+            // Noise dots
+            for (let i = 0; i < 80; i++) {
+                ctx.beginPath();
+                ctx.arc(
+                    Math.random() * W,
+                    Math.random() * H,
+                    Math.random() * 1.5 + 0.5,
+                    0, Math.PI * 2
+                );
+                ctx.fillStyle = `rgba(${Math.random() * 255 | 0},${Math.random() * 255 | 0},${Math.random() * 255 | 0},${Math.random() * 0.4 + 0.1})`;
+                ctx.fill();
+            }
+
+            // Random interference lines
+            for (let i = 0; i < 4; i++) {
+                ctx.beginPath();
+                ctx.moveTo(Math.random() * W, Math.random() * H);
+                ctx.bezierCurveTo(
+                    Math.random() * W, Math.random() * H,
+                    Math.random() * W, Math.random() * H,
+                    Math.random() * W, Math.random() * H
+                );
+                const lineColors = ['#818cf8', '#a78bfa', '#c084fc', '#e879f9', '#f472b6'];
+                ctx.strokeStyle = lineColors[Math.floor(Math.random() * lineColors.length)];
+                ctx.lineWidth = Math.random() * 1.5 + 0.5;
+                ctx.globalAlpha = 0.35;
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+            }
+
+            // Draw each character with individual styling
+            const charColors = ['#c4b5fd', '#a5b4fc', '#93c5fd', '#f0abfc', '#fbcfe8', '#99f6e4'];
+            const fonts = ['Outfit', 'Arial', 'Georgia', 'Courier New'];
+            const spacing = W / (code.length + 1);
+
+            for (let i = 0; i < code.length; i++) {
+                ctx.save();
+                const x = spacing * (i + 1);
+                const y = H / 2 + (Math.random() * 8 - 4);
+                const angle = (Math.random() - 0.5) * 0.5;
+                const size = Math.random() * 6 + 22;
+
+                ctx.translate(x, y);
+                ctx.rotate(angle);
+
+                // Glow effect
+                ctx.shadowColor = charColors[i % charColors.length];
+                ctx.shadowBlur = 8;
+
+                ctx.font = `bold ${size}px ${fonts[Math.floor(Math.random() * fonts.length)]}`;
+                ctx.fillStyle = charColors[i % charColors.length];
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(code[i], 0, 0);
+
+                // Outline for depth
+                ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+                ctx.lineWidth = 0.5;
+                ctx.strokeText(code[i], 0, 0);
+
+                ctx.restore();
+            }
+
+            // Scanline overlay
+            for (let y = 0; y < H; y += 3) {
+                ctx.fillStyle = 'rgba(0,0,0,0.06)';
+                ctx.fillRect(0, y, W, 1);
+            }
+        }
+
+        drawCaptcha();
+    </script>
 </body>
 
 </html>

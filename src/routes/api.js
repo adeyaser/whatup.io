@@ -1,7 +1,20 @@
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
+const path = require('path');
 const { sendMessage } = require('../services/whatsappService');
 const { getSchedulerStatus, updateSettings, processFailedMessages, startSchedulerManually, stopSchedulerManually } = require('../services/messageScheduler');
+
+// Configure Multer storage
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, path.join(__dirname, '../../public/uploads'));
+    },
+    filename: function (req, file, cb) {
+        cb(null, `media_${Date.now()}${path.extname(file.originalname)}`);
+    }
+});
+const upload = multer({ storage: storage });
 
 
 router.post('/send-message', async (req, res) => {
@@ -38,6 +51,15 @@ router.post('/send-media', async (req, res) => {
         }
         res.status(500).json({ status: false, message: 'Failed to send media', error: error.message });
     }
+});
+
+// Upload media file and return URL
+router.post('/upload', upload.single('file'), (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ status: false, message: 'No file uploaded' });
+    }
+    const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+    res.json({ status: true, message: 'File uploaded successfully', url: fileUrl });
 });
 
 // Get Message Logs

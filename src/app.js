@@ -37,6 +37,7 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, '../public')));
+app.use('/uploads', express.static(path.join(__dirname, '../public/uploads')));
 
 // Health check endpoint (untuk monitoring & Docker health check)
 app.get('/health', (req, res) => {

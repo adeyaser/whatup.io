@@ -4,14 +4,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WhatsApp Gateway Professional</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <title>Pesan untuk Kebaikan - WA Gateway</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
 <body>
@@ -19,7 +20,7 @@
     <!-- Mobile Header -->
     <div class="mobile-header">
         <div class="brand-mobile">
-            <h2 style="font-size: 1.25rem; font-weight: 700; color: #5046e5;">WA Gateway</h2>
+            <h2 style="font-size: 1.25rem; font-weight: 700; color: #25d366;">💬 WA Gateway</h2>
         </div>
         <button id="menu-toggle" class="menu-toggle">
             <span></span>
@@ -77,8 +78,8 @@
                 <header>
                     <div>
                         <h1>Dashboard</h1>
-                        <p style="color: var(--gray-500); font-size: 0.875rem; margin-top: 0.25rem;">Monitor your
-                            WhatsApp Gateway activity</p>
+                        <p style="color: var(--gray-500); font-size: 0.875rem; margin-top: 0.25rem;">Pantau aktivitas
+                            Pesan untuk Kebaikan</p>
                     </div>
                     <div style="display: flex; align-items: center; gap: 1rem;">
                         <div style="background: white; padding: 0.5rem 1rem; border-radius: var(--radius-full); box-shadow: var(--shadow-sm); font-size: 0.875rem; font-weight: 500; color: var(--gray-700);"
@@ -89,22 +90,22 @@
                 <!-- Stats Grid -->
                 <div class="grid grid-4" style="margin-bottom: var(--space-xl);">
                     <div class="stat-card">
-                        <div class="stat-label">Messages Sent</div>
-                        <div class="stat-value" id="sent-count" style="color: var(--purple-600);">0</div>
+                        <div class="stat-label">Pesan Terkirim</div>
+                        <div class="stat-value" id="sent-count" style="color: #25d366;">0</div>
                         <div style="margin-top: 0.5rem; color: var(--gray-500); font-size: 0.8rem;">📤 Outgoing</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-label">Messages Received</div>
-                        <div class="stat-value" id="recv-count" style="color: var(--success);">0</div>
+                        <div class="stat-label">Pesan Diterima</div>
+                        <div class="stat-value" id="recv-count" style="color: #2dd4bf;">0</div>
                         <div style="margin-top: 0.5rem; color: var(--gray-500); font-size: 0.8rem;">📥 Incoming</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-label">Active Device</div>
+                        <div class="stat-label">Perangkat Aktif</div>
                         <div class="stat-value" id="current-device-name"
                             style="font-size: 1.25rem; color: var(--gray-700);">None</div>
                         <div id="current-device-id"
                             style="font-size: 0.8rem; color: var(--gray-400); margin-bottom: 0.25rem;">ID: -</div>
-                        <div style="margin-top: 0.5rem; color: var(--gray-500); font-size: 0.8rem;">📱 Connected</div>
+                        <div style="margin-top: 0.5rem; color: var(--gray-500); font-size: 0.8rem;">📱 Terhubung</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-label">Status</div>
@@ -119,9 +120,9 @@
                     <div
                         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-lg);">
                         <div>
-                            <h3 style="margin: 0; font-size: 1.25rem; font-weight: 600;">Device Connection</h3>
+                            <h3 style="margin: 0; font-size: 1.25rem; font-weight: 600;">Koneksi Perangkat</h3>
                             <p style="color: var(--gray-500); font-size: 0.875rem; margin: 0.25rem 0 0 0;">Scan QR code
-                                to connect your WhatsApp</p>
+                                untuk menghubungkan WhatsApp anda</p>
                         </div>
                         <button id="delete-device-btn"
                             style="display: none; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; padding: 0.625rem 1.25rem; border: none; border-radius: var(--radius-md); font-weight: 600; cursor: pointer; transition: all var(--transition-base); box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);"
@@ -151,18 +152,19 @@
             <section id="send-message" class="view">
                 <header>
                     <div>
-                        <h1>Send Message</h1>
-                        <p style="color: var(--gray-500); font-size: 0.875rem; margin-top: 0.25rem;">Send text or media
-                            messages via WhatsApp</p>
+                        <h1>Kirim Pesan</h1>
+                        <p style="color: var(--gray-500); font-size: 0.875rem; margin-top: 0.25rem;">Kirim pesan teks
+                            atau
+                            media via WhatsApp</p>
                     </div>
                 </header>
 
                 <div class="card">
                     <!-- Info Banner -->
                     <div
-                        style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-left: 4px solid var(--info); padding: var(--space-lg); margin-bottom: var(--space-xl); border-radius: var(--radius-md);">
-                        <h4 style="margin: 0 0 0.75rem 0; color: #1e3a8a; font-size: 1rem; font-weight: 600;">💡 Sending
-                            Tips</h4>
+                        style="background: linear-gradient(135deg, #ecfdf5 0%, #ccfbf1 100%); border-left: 4px solid #25d366; padding: var(--space-lg); margin-bottom: var(--space-xl); border-radius: var(--radius-md);">
+                        <h4 style="margin: 0 0 0.75rem 0; color: #064e3b; font-size: 1rem; font-weight: 600;">💡 Tips
+                            Pengiriman</h4>
                         <ul
                             style="margin: 0; padding-left: 1.2rem; font-size: 0.875rem; color: #1e40af; line-height: 1.8;">
                             <li><strong>Number Format:</strong> Use country code (e.g., <code
@@ -217,8 +219,17 @@
                         </div>
 
                         <div class="form-group" id="url-group" style="display:none;">
-                            <label>Media URL</label>
-                            <input type="url" id="media-url" placeholder="https://example.com/image.jpg">
+                            <label>Media Source</label>
+                            <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem;">
+                                <input type="file" id="media-file" accept="image/*,video/*"
+                                    style="flex: 1; padding: 0.5rem; border: 1px dashed var(--office-primary-light); background: #f8fafc;">
+                                <span style="font-size: 0.85rem; color: #64748b; font-weight: 600;">OR</span>
+                                <input type="url" id="media-url" placeholder="https://example.com/image.jpg"
+                                    style="flex: 2;">
+                            </div>
+                            <small id="upload-status"
+                                style="display: none; color: #0d7a3e; font-size: 0.8rem; font-weight: 600;">File
+                                uploaded automatically!</small>
                         </div>
 
                         <div class="form-group">
